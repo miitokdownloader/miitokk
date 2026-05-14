@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiiTok Downloader</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #cc0000;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+        .tagline {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+        .input-box {
+            background: #111;
+            border: 1px solid #cc0000;
+            border-radius: 8px;
+            padding: 16px 20px;
+            width: 100%;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .btn {
+            background: #cc0000;
+            color: #fff;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            letter-spacing: 2px;
+            transition: background 0.3s;
+        }
+        .btn:hover { background: #ff0000; }
+        .status {
+            margin-top: 20px;
+            color: #cc0000;
+            font-size: 0.9rem;
+        }
+        .footer {
+            margin-top: 40px;
+            color: #333;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">MIITOK</div>
+        <div class="tagline">TIKTOK DOWNLOADER — NO WATERMARK</div>
+        <input class="input-box" id="urlInput" 
+               placeholder="Paste link TikTok di sini..." 
+               type="text"/>
+        <button class="btn" onclick="downloadVideo()">DOWNLOAD</button>
+        <div class="status" id="status"></div>
+        <div class="footer">MiiTok © 2025 — Free & No Watermark</div>
+    </div>
+
+    <script>
+        async function downloadVideo() {
+            const url = document.getElementById('urlInput').value;
+            const status = document.getElementById('status');
+            
+            if (!url) {
+                status.textContent = 'Masukkan link TikTok dulu!';
+                return;
+            }
+            
+            status.textContent = 'Sedang memproses...';
+            
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'miitok_video.mp4';
+                    a.click();
+                    status.textContent = 'Download berhasil!';
+                } else {
+                    const err = await response.json();
+                    status.textContent = 'Gagal: ' + err.error;
+                }
+            } catch(e) {
+                status.textContent = 'Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
