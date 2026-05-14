@@ -7,13 +7,27 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a0a;
-            color: #fff;
             font-family: 'Segoe UI', sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+        .bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            filter: brightness(0.3);
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: -1;
         }
         .container {
             text-align: center;
@@ -25,17 +39,39 @@
             font-size: 3rem;
             font-weight: 900;
             color: #cc0000;
-            letter-spacing: 4px;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px #cc0000;
             margin-bottom: 8px;
         }
         .tagline {
-            color: #666;
-            font-size: 0.9rem;
+            color: #aaa;
+            font-size: 0.85rem;
             margin-bottom: 40px;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+        }
+        .quality-select {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .quality-btn {
+            background: #111;
+            border: 1px solid #cc0000;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .quality-btn.active {
+            background: #cc0000;
+            color: #fff;
         }
         .input-box {
-            background: #111;
+            background: rgba(0,0,0,0.7);
             border: 1px solid #cc0000;
             border-radius: 8px;
             padding: 16px 20px;
@@ -59,62 +95,130 @@
             transition: background 0.3s;
         }
         .btn:hover { background: #ff0000; }
-        .status {
-            margin-top: 20px;
+        .btn:disabled { background: #555; cursor: not-allowed; }
+
+        /* Loading */
+        .loading {
+            display: none;
+            margin: 20px auto;
+        }
+        .loading.show { display: block; }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #cc0000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
             color: #cc0000;
             font-size: 0.9rem;
+            letter-spacing: 2px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .status {
+            margin-top: 16px;
+            color: #cc0000;
+            font-size: 0.9rem;
+            min-height: 20px;
         }
         .footer {
             margin-top: 40px;
-            color: #333;
-            font-size: 0.8rem;
+            color: #444;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
+    <img class="bg" src="/static/82d305b158d544ab82bec6e6f5fc7f63.gif" alt="bg"/>
+    <div class="overlay"></div>
+
     <div class="container">
         <div class="logo">MIITOK</div>
         <div class="tagline">TIKTOK DOWNLOADER — NO WATERMARK</div>
-        <input class="input-box" id="urlInput" 
-               placeholder="Paste link TikTok di sini..." 
+
+        <div class="quality-select">
+            <button class="quality-btn active" onclick="setQuality(this,'best')">Best</button>
+            <button class="quality-btn" onclick="setQuality(this,'1080p')">1080p</button>
+            <button class="quality-btn" onclick="setQuality(this,'720p')">720p</button>
+            <button class="quality-btn" onclick="setQuality(this,'480p')">480p</button>
+            <button class="quality-btn" onclick="setQuality(this,'audio')">Audio</button>
+        </div>
+
+        <input class="input-box" id="urlInput"
+               placeholder="Paste link TikTok di sini..."
                type="text"/>
-        <button class="btn" onclick="downloadVideo()">DOWNLOAD</button>
+        <button class="btn" id="dlBtn" onclick="downloadVideo()">DOWNLOAD</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">MEMPROSES VIDEO...</div>
+        </div>
+
         <div class="status" id="status"></div>
         <div class="footer">MiiTok © 2025 — Free & No Watermark</div>
     </div>
 
     <script>
+        let selectedQuality = 'best';
+
+        function setQuality(el, q) {
+            document.querySelectorAll('.quality-btn')
+                .forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            selectedQuality = q;
+        }
+
         async function downloadVideo() {
-            const url = document.getElementById('urlInput').value;
+            const url = document.getElementById('urlInput').value.trim();
             const status = document.getElementById('status');
-            
+            const loading = document.getElementById('loading');
+            const btn = document.getElementById('dlBtn');
+
             if (!url) {
                 status.textContent = 'Masukkan link TikTok dulu!';
                 return;
             }
-            
-            status.textContent = 'Sedang memproses...';
-            
+
+            btn.disabled = true;
+            loading.classList.add('show');
+            status.textContent = '';
+
             try {
                 const response = await fetch('/download', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url: url})
+                    body: JSON.stringify({url, quality: selectedQuality})
                 });
-                
+
                 if (response.ok) {
                     const blob = await response.blob();
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = 'miitok_video.mp4';
+                    a.download = selectedQuality === 'audio' 
+                        ? 'miitok_audio.mp3' 
+                        : 'miitok_video.mp4';
                     a.click();
-                    status.textContent = 'Download berhasil!';
+                    status.textContent = '✅ Download berhasil!';
                 } else {
                     const err = await response.json();
-                    status.textContent = 'Gagal: ' + err.error;
+                    status.textContent = '❌ Gagal: ' + err.error;
                 }
             } catch(e) {
-                status.textContent = 'Error: ' + e.message;
+                status.textContent = '❌ Error: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
             }
         }
     </script>
