@@ -1,10 +1,33 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 import yt_dlp
 import os
 import uuid
-import requests
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+@app.route('/static/makima.mp4')
+def serve_video():
+    video_path = os.path.join(app.static_folder, 'makima.mp4')
+    file_size = os.path.getsize(video_path)
+    range_header = request.headers.get('Range', None)
+    
+    if range_header:
+        byte_start = int(range_header.replace('bytes=', '').split('-')[0])
+        byte_end = min(byte_start + 1024*1024, file_size - 1)
+        length = byte_end - byte_start + 1
+        
+        with open(video_path, 'rb') as f:
+            f.seek(byte_start)
+            data = f.read(length)
+        
+        rv = Response(data, 206, mimetype='video/mp4', direct_passthrough=True)
+        rv.headers.add('Content-Range', f'bytes {byte_start}-{byte_end}/{file_size}')
+        rv.headers.add('Accept-Ranges', 'bytes')
+        rv.headers.add('Content-Length', str(length))
+        return rv
+    
+    return send_file(video_path, mimetype='video/mp4')
+
 
 @app.route('/')
 def index():
