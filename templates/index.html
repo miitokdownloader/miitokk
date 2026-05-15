@@ -7,15 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Rajdhani', sans-serif;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: #000;
+            overflow-y: auto;
+            background: #0a0a0a;
         }
+
+        /* ===== BACKGROUND VIDEO ===== */
         .bg-video {
             position: fixed;
             top: 50%; left: 50%;
@@ -23,125 +23,223 @@
             min-width: 100%; min-height: 100%;
             width: auto; height: auto;
             z-index: 0;
-            filter: brightness(0.2) saturate(1.8);
+            filter: brightness(0.25) saturate(2);
         }
+
+        /* ===== OVERLAY ===== */
         .overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             background: linear-gradient(
                 to bottom,
-                rgba(0,0,0,0.6) 0%,
-                rgba(60,0,0,0.3) 50%,
-                rgba(0,0,0,0.8) 100%
+                rgba(0,0,0,0.55) 0%,
+                rgba(40,0,0,0.35) 50%,
+                rgba(0,0,0,0.65) 100%
             );
             z-index: 1;
         }
-        .container {
+
+        /* ===== PAGE WRAPPER ===== */
+        .page-wrapper {
             position: relative;
             z-index: 2;
-            text-align: center;
-            padding: 40px 24px;
-            max-width: 560px;
-            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 16px 48px;
         }
+
+        /* ===== HEADER ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
+            font-size: clamp(2.2rem, 6vw, 4rem);
             font-weight: 900;
             color: #fff;
             letter-spacing: 8px;
             text-shadow: 0 0 10px #cc0000, 0 0 30px #cc0000, 0 0 60px #cc0000;
-            margin-bottom: 6px;
         }
+
         .tagline {
             color: #cc0000;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             letter-spacing: 4px;
-            margin-bottom: 10px;
+            margin-top: 6px;
         }
+
         .divider {
             width: 60px;
             height: 2px;
             background: linear-gradient(to right, transparent, #cc0000, transparent);
-            margin: 0 auto 28px;
+            margin: 12px auto 0;
         }
+
+        /* ===== MAIN PANEL ===== */
+        .main-panel {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        /* ===== QUALITY TABS ===== */
         .quality-select {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
             justify-content: center;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
+
         .quality-btn {
             background: transparent;
-            border: 1px solid #cc000066;
-            color: #aaa;
-            padding: 6px 14px;
+            border: 1px solid #cc000055;
+            color: #888;
+            padding: 7px 16px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
-            letter-spacing: 1px;
+            font-size: 0.82rem;
+            letter-spacing: 2px;
             transition: all 0.2s;
         }
+
         .quality-btn.active {
             background: #cc0000;
             border-color: #cc0000;
             color: #fff;
-            box-shadow: 0 0 10px #cc000066;
+            box-shadow: 0 0 12px #cc000088;
         }
+
+        .quality-btn:not(.active):hover {
+            border-color: #cc0000aa;
+            color: #ccc;
+        }
+
+        /* ===== INPUT ===== */
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: stretch;
+        }
+
         .input-box {
+            flex: 1;
             background: rgba(255,255,255,0.05);
-            border: 1px solid #cc000066;
+            border: 1px solid #cc000055;
             border-radius: 8px;
-            padding: 16px 20px;
-            width: 100%;
+            padding: 14px 18px;
             color: #fff;
-            font-size: 0.95rem;
             font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
             outline: none;
-            transition: border 0.3s;
             backdrop-filter: blur(10px);
-            margin-bottom: 14px;
+            transition: border 0.3s;
         }
+
         .input-box:focus {
             border-color: #cc0000;
             box-shadow: 0 0 15px #cc000033;
         }
-        .input-box::placeholder { color: #555; }
-        .btn {
-            background: linear-gradient(135deg, #cc0000, #880000);
-            color: #fff;
-            border: none;
-            padding: 16px 40px;
+
+        .input-box::placeholder { color: #444; }
+
+        /* ===== DOWNLOAD BUTTONS (NEON ROTATING BORDER) ===== */
+        .btn-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .neon-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 32px;
             border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 700;
             font-family: 'Orbitron', sans-serif;
-            cursor: pointer;
-            width: 100%;
+            font-size: 0.88rem;
+            font-weight: 700;
             letter-spacing: 3px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 20px #cc000044;
+            color: #fff;
+            background: #111;
+            border: none;
+            cursor: pointer;
+            overflow: hidden;
+            z-index: 0;
+            transition: transform 0.2s;
+            min-width: 160px;
         }
-        .btn:hover {
-            background: linear-gradient(135deg, #ff0000, #cc0000);
-            box-shadow: 0 4px 30px #cc000088;
-            transform: translateY(-1px);
+
+        .neon-btn span {
+            position: relative;
+            z-index: 1;
         }
-        .btn:disabled {
-            background: #333;
-            box-shadow: none;
+
+        /* Rotating conic-gradient ring for MP4 */
+        .neon-btn::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 10px;
+            background: conic-gradient(from 0deg, transparent 0%, #cc0000 20%, transparent 40%);
+            animation: neon-spin 2s linear infinite;
+            z-index: -1;
+        }
+
+        /* Dark inner cutout so only the ring edge shows */
+        .neon-btn::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 7px;
+            background: #111;
+            z-index: -1;
+        }
+
+        @keyframes neon-spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        /* MP3 button: pulsing magenta ring instead of spinning red */
+        .btn-mp3::before {
+            background: conic-gradient(from 0deg, transparent 0%, #ff0066 20%, transparent 40%);
+            animation: neon-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes neon-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.96); }
+        }
+
+        .neon-btn:hover { transform: translateY(-2px); }
+
+        .neon-btn:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none;
         }
+
+        /* ===== LOADING SPINNER ===== */
         .loading {
             display: none;
-            margin: 24px auto;
+            text-align: center;
+            margin: 20px 0;
         }
+
         .loading.show { display: block; }
+
         .spinner {
             width: 44px;
             height: 44px;
@@ -150,39 +248,143 @@
             border-right: 3px solid #cc000066;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
-            margin: 0 auto 12px;
+            margin: 0 auto 10px;
         }
+
         @keyframes spin { to { transform: rotate(360deg); } }
+
         .loading-text {
             color: #cc0000;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             letter-spacing: 3px;
             animation: pulse 1.2s ease-in-out infinite;
         }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
+            50%       { opacity: 0.2; }
         }
 
-        /* Photo Results */
+        /* ===== THUMBNAIL GALLERY ===== */
+        .gallery-section {
+            width: 100%;
+            max-width: 960px;
+            margin-bottom: 28px;
+        }
+
+        .gallery-label {
+            color: #555;
+            font-size: 0.72rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .gallery-scroll {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 12px;
+            padding: 8px 4px 16px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #cc000044 transparent;
+        }
+
+        .gallery-scroll::-webkit-scrollbar { height: 4px; }
+        .gallery-scroll::-webkit-scrollbar-track { background: transparent; }
+        .gallery-scroll::-webkit-scrollbar-thumb {
+            background: #cc000066;
+            border-radius: 2px;
+        }
+
+        .thumb-card {
+            flex-shrink: 0;
+            width: 160px;
+            height: 220px;
+            border-radius: 10px;
+            border: 1px solid #cc000044;
+            background: linear-gradient(135deg, #1a0000, #0d0d0d);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: start;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .thumb-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #cc0000;
+        }
+
+        .thumb-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .thumb-card .thumb-label {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 6px 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            color: #fff;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .thumb-placeholder {
+            color: #cc000066;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .thumb-card .thumb-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: #cc000088;
+            margin-bottom: 4px;
+        }
+
+        .thumb-card.demo {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        /* ===== PHOTO GRID ===== */
         .photo-grid {
             display: none;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-top: 20px;
         }
+
         .photo-grid.show { display: grid; }
+
         .photo-item {
             position: relative;
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #cc000044;
         }
+
         .photo-item img {
             width: 100%;
             height: 150px;
             object-fit: cover;
         }
+
         .photo-dl-btn {
             position: absolute;
             bottom: 0; left: 0; right: 0;
@@ -196,6 +398,7 @@
             letter-spacing: 1px;
             cursor: pointer;
         }
+
         .dl-all-btn {
             display: none;
             margin-top: 12px;
@@ -210,21 +413,38 @@
             letter-spacing: 2px;
             cursor: pointer;
         }
+
         .dl-all-btn.show { display: block; }
 
+        /* ===== STATUS + FOOTER ===== */
         .status {
             margin-top: 16px;
             font-size: 0.9rem;
             letter-spacing: 1px;
             min-height: 22px;
+            text-align: center;
         }
+
         .status.success { color: #00cc66; }
-        .status.error { color: #cc0000; }
+        .status.error   { color: #ff3333; }
+
         .footer {
-            margin-top: 36px;
+            margin-top: 40px;
             color: #333;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             letter-spacing: 2px;
+            text-align: center;
+        }
+
+        /* ===== DESKTOP (768px+) ===== */
+        @media (min-width: 768px) {
+            .page-wrapper { padding: 40px 32px 60px; }
+            .logo { font-size: 4rem; }
+            .main-panel { max-width: 760px; }
+            .btn-row { gap: 24px; }
+            .neon-btn { padding: 16px 40px; font-size: 0.95rem; }
+            .gallery-scroll { gap: 16px; }
+            .thumb-card { width: 180px; height: 250px; }
         }
     </style>
 </head>
@@ -234,35 +454,54 @@
     </video>
     <div class="overlay"></div>
 
-    <div class="container">
-        <div class="logo">MIITOK</div>
-        <div class="tagline">TIKTOK DOWNLOADER — NO WATERMARK</div>
-        <div class="divider"></div>
-
-        <div class="quality-select">
-            <button class="quality-btn active" onclick="setQuality(this,'best')">BEST</button>
-            <button class="quality-btn" onclick="setQuality(this,'1080p')">1080P</button>
-            <button class="quality-btn" onclick="setQuality(this,'720p')">720P</button>
-            <button class="quality-btn" onclick="setQuality(this,'480p')">480P</button>
-            <button class="quality-btn" onclick="setQuality(this,'audio')">AUDIO</button>
+    <div class="page-wrapper">
+        <div class="header">
+            <div class="logo">MIITOK</div>
+            <div class="tagline">TIKTOK DOWNLOADER — NO WATERMARK</div>
+            <div class="divider"></div>
         </div>
 
-        <input class="input-box" id="urlInput"
-               placeholder="Paste link TikTok di sini..."
-               type="text"/>
+        <div class="main-panel">
+            <div class="quality-select">
+                <button class="quality-btn active" onclick="setQuality(this,'best')">BEST</button>
+                <button class="quality-btn" onclick="setQuality(this,'1080p')">1080P</button>
+                <button class="quality-btn" onclick="setQuality(this,'720p')">720P</button>
+                <button class="quality-btn" onclick="setQuality(this,'480p')">480P</button>
+                <button class="quality-btn" onclick="setQuality(this,'audio')">AUDIO</button>
+            </div>
 
-        <button class="btn" id="dlBtn" onclick="downloadVideo()">DOWNLOAD</button>
+            <div class="input-row">
+                <input class="input-box" id="urlInput"
+                       placeholder="Paste link TikTok di sini..."
+                       type="text"/>
+            </div>
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text">MEMPROSES...</div>
+            <div class="btn-row">
+                <button class="neon-btn btn-mp4" id="dlBtn" onclick="downloadVideo()">
+                    <span>&#9654; MP4</span>
+                </button>
+                <button class="neon-btn btn-mp3" id="dlAudioBtn" onclick="downloadAudio()">
+                    <span>&#9834; MP3</span>
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div class="loading-text">MEMPROSES...</div>
+            </div>
+
+            <div class="photo-grid" id="photoGrid"></div>
+            <button class="dl-all-btn" id="dlAllBtn" onclick="downloadAll()">&#11015; DOWNLOAD SEMUA FOTO</button>
+
+            <div class="status" id="status"></div>
         </div>
 
-        <div class="photo-grid" id="photoGrid"></div>
-        <button class="dl-all-btn" id="dlAllBtn" onclick="downloadAll()">⬇ DOWNLOAD SEMUA FOTO</button>
+        <div class="gallery-section">
+            <div class="gallery-label">PREVIEW GALLERY</div>
+            <div class="gallery-scroll" id="galleryScroll"></div>
+        </div>
 
-        <div class="status" id="status"></div>
-        <div class="footer">MIITOK © 2025 — FREE & NO WATERMARK</div>
+        <div class="footer">MIITOK &copy; 2025 &mdash; FREE &amp; NO WATERMARK</div>
     </div>
 
     <script>
@@ -280,6 +519,7 @@
             const status = document.getElementById('status');
             const loading = document.getElementById('loading');
             const btn = document.getElementById('dlBtn');
+            const audioBtn = document.getElementById('dlAudioBtn');
             const photoGrid = document.getElementById('photoGrid');
             const dlAllBtn = document.getElementById('dlAllBtn');
 
@@ -290,6 +530,7 @@
             }
 
             btn.disabled = true;
+            audioBtn.disabled = true;
             loading.classList.add('show');
             status.className = 'status';
             status.textContent = '';
@@ -324,6 +565,7 @@
                         });
                         status.className = 'status success';
                         status.textContent = `✓ ${data.urls.length} FOTO DITEMUKAN`;
+                        showGallery(data.urls.map((u, i) => ({url: u, label: 'PHOTO ' + (i + 1)})));
                     } else {
                         status.className = 'status error';
                         status.textContent = '✗ GAGAL: ' + data.error;
@@ -342,6 +584,63 @@
                 status.textContent = '✗ ERROR: ' + e.message;
             } finally {
                 btn.disabled = false;
+                audioBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        }
+
+        async function downloadAudio() {
+            const url = document.getElementById('urlInput').value.trim();
+            const status = document.getElementById('status');
+            const loading = document.getElementById('loading');
+            const btn = document.getElementById('dlBtn');
+            const audioBtn = document.getElementById('dlAudioBtn');
+            const photoGrid = document.getElementById('photoGrid');
+            const dlAllBtn = document.getElementById('dlAllBtn');
+
+            if (!url) {
+                status.className = 'status error';
+                status.textContent = '⚠ MASUKKAN LINK TIKTOK DULU';
+                return;
+            }
+
+            btn.disabled = true;
+            audioBtn.disabled = true;
+            loading.classList.add('show');
+            status.className = 'status';
+            status.textContent = '';
+            photoGrid.classList.remove('show');
+            photoGrid.innerHTML = '';
+            dlAllBtn.classList.remove('show');
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url, quality: 'audio'})
+                });
+
+                const contentType = response.headers.get('content-type');
+
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    status.className = 'status error';
+                    status.textContent = '✗ GAGAL: ' + data.error;
+                } else if (response.ok) {
+                    const blob = await response.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'miitok_audio.mp3';
+                    a.click();
+                    status.className = 'status success';
+                    status.textContent = '✓ DOWNLOAD BERHASIL!';
+                }
+            } catch(e) {
+                status.className = 'status error';
+                status.textContent = '✗ ERROR: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                audioBtn.disabled = false;
                 loading.classList.remove('show');
             }
         }
@@ -356,9 +655,40 @@
 
         function downloadAll() {
             photoUrls.forEach((url, i) => {
-                setTimeout(() => downloadPhoto(url, i+1), i * 500);
+                setTimeout(() => downloadPhoto(url, i + 1), i * 500);
             });
         }
+
+        function showDemoGallery() {
+            const scroll = document.getElementById('galleryScroll');
+            scroll.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const card = document.createElement('div');
+                card.className = 'thumb-card demo';
+                card.innerHTML = `<div class="thumb-num">VIDEO ${i}</div><div class="thumb-placeholder">PREVIEW</div>`;
+                scroll.appendChild(card);
+            }
+        }
+
+        function showGallery(thumbs) {
+            const scroll = document.getElementById('galleryScroll');
+            if (!thumbs || thumbs.length === 0) {
+                showDemoGallery();
+                return;
+            }
+            scroll.innerHTML = '';
+            thumbs.forEach((item, i) => {
+                const src = typeof item === 'string' ? item : item.url;
+                const lbl = typeof item === 'string' ? ('PHOTO ' + (i + 1)) : item.label;
+                const card = document.createElement('div');
+                card.className = 'thumb-card';
+                card.innerHTML = `<img src="${src}" alt="${lbl}"/><div class="thumb-label">${lbl}</div>`;
+                card.onclick = () => window.open(src, '_blank');
+                scroll.appendChild(card);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', showDemoGallery);
     </script>
 </body>
 </html>
