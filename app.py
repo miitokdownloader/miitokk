@@ -185,64 +185,44 @@ def download():
     try:
         if quality == 'audio':
             ffmpeg_path = shutil.which('ffmpeg')
-            print(f"[audio] ffmpeg={ffmpeg_path}", flush=True)
+            ffprobe_path = shutil.which('ffprobe')
+            print(f"[audio] ffmpeg={ffmpeg_path} ffprobe={ffprobe_path}", flush=True)
+
+            if not ffmpeg_path or not ffprobe_path:
+                return jsonify({'error': 'MP3 conversion requires FFmpeg on the server.'}), 500
 
             audio_base = f"/tmp/{tmp_id}"
 
-            if ffmpeg_path:
-                # Dengan ffmpeg — convert ke mp3
-                ydl_opts = {
-                    'outtmpl': audio_base + '.%(ext)s',
-                    'format': 'bestaudio/best',
-                    'postprocessors': [{
-                        'key': 'FFmpegExtractAudio',
-                        'preferredcodec': 'mp3',
-                        'preferredquality': '192',
-                    }],
-                    'ffmpeg_location': os.path.dirname(ffmpeg_path),
-                }
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+            ydl_opts = {
+                'outtmpl': audio_base + '.%(ext)s',
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'ffmpeg_location': os.path.dirname(ffmpeg_path),
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
 
-                audio_path = audio_base + '.mp3'
-                if not os.path.exists(audio_path):
+            audio_path = audio_base + '.mp3'
+            if not os.path.exists(audio_path):
+                # fallback: find any file with this base name
+                candidates = [f for f in glob.glob(audio_base + '.*') if f.endswith('.mp3')]
+                if not candidates:
                     candidates = glob.glob(audio_base + '.*')
-                    audio_path = candidates[0] if candidates else None
+                audio_path = candidates[0] if candidates else None
 
-                if not audio_path:
-                    for f in glob.glob(audio_base + '.*'):
-                        try:
-                            os.remove(f)
-                        except Exception:
-                            pass
-                    return jsonify({'error': 'File audio tidak ditemukan'}), 500
+            if not audio_path or not os.path.exists(audio_path):
+                for f in glob.glob(audio_base + '.*'):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
+                return jsonify({'error': 'File audio tidak ditemukan'}), 500
 
-                dl_name = 'miitok_audio.mp3'
-
-            else:
-                # Tanpa ffmpeg — download format asli (m4a/webm)
-                ydl_opts = {
-                    'outtmpl': audio_base + '.%(ext)s',
-                    'format': 'bestaudio/best',
-                }
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-
-                ext = info.get('ext', 'm4a')
-                audio_path = f"{audio_base}.{ext}"
-                if not os.path.exists(audio_path):
-                    candidates = glob.glob(audio_base + '.*')
-                    audio_path = candidates[0] if candidates else None
-
-                if not audio_path:
-                    for f in glob.glob(audio_base + '.*'):
-                        try:
-                            os.remove(f)
-                        except Exception:
-                            pass
-                    return jsonify({'error': 'File audio tidak ditemukan'}), 500
-
-                dl_name = f'miitok_audio.{ext}'
+            dl_name = 'miitok_audio.mp3'
 
             @after_this_request
             def cleanup_audio(response):
@@ -252,7 +232,7 @@ def download():
                     pass
                 return response
 
-            return send_file(audio_path, as_attachment=True, download_name=dl_name)
+            return send_file(audio_path, mimetype='audio/mpeg', as_attachment=True, download_name=dl_name)
 
         else:
             format_map = {
