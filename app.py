@@ -296,5 +296,94 @@ def download():
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
+@app.route('/photos', methods=['POST'])
+def photos():
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        url = data.get('url', '').strip()
+    else:
+        url = (request.form.get('url') or '').strip()
+
+    if not url:
+        return jsonify({'error': 'URL kosong'}), 400
+
+    if not _is_valid_tiktok_url(url):
+        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'noplaylist': False,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        if not info:
+            return jsonify({'photos': [], 'count': 0, 'title': ''}), 200
+
+        photo_urls = []
+
+        if info.get('_type') == 'playlist' and info.get('entries'):
+            for entry in info['entries']:
+                if not entry:
+                    continue
+                added = False
+                # Try direct URL — check if image-like
+                url_candidate = entry.get('url') or entry.get('webpage_url') or ''
+                if url_candidate.startswith('http'):
+                    if any(ext in url_candidate.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
+                        photo_urls.append(url_candidate)
+                        added = True
+                    else:
+                        # Try formats
+                        for fmt in (entry.get('formats') or []):
+                            fmt_url = fmt.get('url', '')
+                            if fmt_url and any(ext in fmt_url.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
+                                photo_urls.append(fmt_url)
+                                added = True
+                                break
+                        if not added:
+                            # Try thumbnails
+                            thumbnails = entry.get('thumbnails') or []
+                            if thumbnails:
+                                # Pick highest resolution thumbnail
+                                best = max(thumbnails, key=lambda t: (t.get('width') or 0) * (t.get('height') or 0), default=None)
+                                if best and best.get('url'):
+                                    photo_urls.append(best['url'])
+                                    added = True
+                            if not added and url_candidate.startswith('http'):
+                                photo_urls.append(url_candidate)
+
+        return jsonify({
+            'photos': photo_urls,
+            'count': len(photo_urls),
+            'title': info.get('title', '')
+        })
+
+    except Exception as e:
+        return jsonify({'error': 'Gagal mengambil foto, coba lagi'}), 500
+
+
+@app.route('/photo-proxy')
+def photo_proxy():
+    import requests as req_lib
+    target_url = request.args.get('url', '').strip()
+    if not target_url or not target_url.startswith('https://'):
+        return '', 400
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Referer': 'https://www.tiktok.com/',
+        }
+        r = req_lib.get(target_url, headers=headers, timeout=15, stream=True)
+        if r.status_code != 200:
+            return '', 404
+        content_type = r.headers.get('Content-Type', 'image/jpeg')
+        return Response(r.content, status=200, mimetype=content_type)
+    except Exception:
+        return '', 404
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
