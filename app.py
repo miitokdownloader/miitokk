@@ -352,8 +352,7 @@ def photos():
                                 if best and best.get('url'):
                                     photo_urls.append(best['url'])
                                     added = True
-                            if not added and url_candidate.startswith('http'):
-                                photo_urls.append(url_candidate)
+                            # If still not added, skip this entry — avoid appending non-image URLs
 
         return jsonify({
             'photos': photo_urls,
@@ -371,6 +370,13 @@ def photo_proxy():
     target_url = request.args.get('url', '').strip()
     if not target_url or not target_url.startswith('https://'):
         return '', 400
+    _parsed_host = urlparse(target_url).netloc.lower().split(':')[0]
+    _ALLOWED_TIKTOK_HOSTS = (
+        'tiktokcdn.com', 'tiktokv.com', 'tiktok.com',
+        'p16-sign.tiktokcdn-us.com', 'p77-sign.tiktokcdn-us.com',
+    )
+    if not any(_parsed_host == h or _parsed_host.endswith('.' + h) for h in _ALLOWED_TIKTOK_HOSTS):
+        return '', 403
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
@@ -380,6 +386,8 @@ def photo_proxy():
         if r.status_code != 200:
             return '', 404
         content_type = r.headers.get('Content-Type', 'image/jpeg')
+        if not content_type.startswith('image/'):
+            content_type = 'application/octet-stream'
         return Response(r.content, status=200, mimetype=content_type)
     except Exception:
         return '', 404

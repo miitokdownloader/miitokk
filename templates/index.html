@@ -848,6 +848,7 @@
 
     /* ── QUALITY ──────────────────────────────────── */
     function setQuality(el, q) {
+      isDownloading = false;
       document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       selectedQuality = q;
@@ -863,6 +864,10 @@
         isPhotoMode = false;
         document.getElementById('dlWrap').style.display = '';
         document.getElementById('photoSection').style.display = 'none';
+        document.getElementById('photoCarousel').innerHTML = '';
+        document.getElementById('photoCount').textContent = '';
+        document.getElementById('downloadAllBtn').style.display = 'none';
+        photoUrls = [];
       }
     }
 
