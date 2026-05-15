@@ -15,22 +15,73 @@ def serve_video():
     file_size = os.path.getsize(video_path)
     range_header = request.headers.get('Range', None)
     if range_header:
-        byte_start = int(range_header.replace('bytes=', '').split('-')[0])
-        byte_end = min(byte_start + 1024*1024, file_size - 1)
-        length = byte_end - byte_start + 1
-        with open(video_path, 'rb') as f:
-            f.seek(byte_start)
-            data = f.read(length)
-        rv = Response(data, 206, mimetype='video/mp4', direct_passthrough=True)
-        rv.headers.add('Content-Range', f'bytes {byte_start}-{byte_end}/{file_size}')
-        rv.headers.add('Accept-Ranges', 'bytes')
-        rv.headers.add('Content-Length', str(length))
-        return rv
+        try:
+            byte_start = int(range_header.replace('bytes=', '').split('-')[0])
+            byte_end = min(byte_start + 1024 * 1024, file_size - 1)
+            length = byte_end - byte_start + 1
+            with open(video_path, 'rb') as f:
+                f.seek(byte_start)
+                data = f.read(length)
+            rv = Response(data, 206, mimetype='video/mp4', direct_passthrough=True)
+            rv.headers.add('Content-Range', f'bytes {byte_start}-{byte_end}/{file_size}')
+            rv.headers.add('Accept-Ranges', 'bytes')
+            rv.headers.add('Content-Length', str(length))
+            return rv
+        except Exception:
+            pass
     return send_file(video_path, mimetype='video/mp4')
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/preview', methods=['POST'])
+def preview():
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        url = data.get('url', '').strip()
+    else:
+        url = (request.form.get('url') or '').strip()
+
+    if not url:
+        return jsonify({'error': 'URL kosong'}), 400
+
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'noplaylist': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        if not info:
+            return jsonify({'error': 'Tidak bisa ambil info'}), 400
+
+        # Hanya return data asli yang tersedia
+        result = {}
+        if info.get('title'):
+            result['title'] = info['title'][:80]
+        if info.get('thumbnail'):
+            result['thumbnail'] = info['thumbnail']
+        if info.get('duration'):
+            result['duration'] = int(info['duration'])
+        if info.get('uploader'):
+            result['uploader'] = info['uploader']
+        if info.get('webpage_url'):
+            result['webpage_url'] = info['webpage_url']
+
+        # Cek apakah foto/slideshow
+        if info.get('_type') == 'playlist':
+            result['is_slideshow'] = True
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)[:100]}), 500
+
 
 @app.route('/download', methods=['POST'])
 def download():
@@ -54,43 +105,64 @@ def download():
     try:
         if quality == 'audio':
             ffmpeg_path = shutil.which('ffmpeg')
-            ffprobe_path = shutil.which('ffprobe')
-            print(f"[audio] ffmpeg={ffmpeg_path} ffprobe={ffprobe_path}", flush=True)
-
-            if not ffmpeg_path:
-                return jsonify({'error': 'FFmpeg tidak tersedia di server. Coba kualitas lain.'}), 500
+            print(f"[audio] ffmpeg={ffmpeg_path}", flush=True)
 
             audio_base = f"/tmp/{tmp_id}"
-            ydl_opts = {
-                'outtmpl': audio_base + '.%(ext)s',
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'ffmpeg_location': os.path.dirname(ffmpeg_path),
-            }
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+            if ffmpeg_path:
+                # Dengan ffmpeg — convert ke mp3
+                ydl_opts = {
+                    'outtmpl': audio_base + '.%(ext)s',
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'ffmpeg_location': os.path.dirname(ffmpeg_path),
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
 
-            # Cari file hasil output
-            audio_path = audio_base + '.mp3'
-            if not os.path.exists(audio_path):
-                candidates = glob.glob(audio_base + '.*')
-                if candidates:
-                    audio_path = candidates[0]
-                else:
-                    return jsonify({'error': 'File audio tidak ditemukan setelah download'}), 500
+                audio_path = audio_base + '.mp3'
+                if not os.path.exists(audio_path):
+                    candidates = glob.glob(audio_base + '.*')
+                    audio_path = candidates[0] if candidates else None
+
+                if not audio_path:
+                    return jsonify({'error': 'File audio tidak ditemukan'}), 500
+
+                dl_name = 'miitok_audio.mp3'
+
+            else:
+                # Tanpa ffmpeg — download format asli (m4a/webm)
+                ydl_opts = {
+                    'outtmpl': audio_base + '.%(ext)s',
+                    'format': 'bestaudio/best',
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+
+                ext = info.get('ext', 'm4a')
+                audio_path = f"{audio_base}.{ext}"
+                if not os.path.exists(audio_path):
+                    candidates = glob.glob(audio_base + '.*')
+                    audio_path = candidates[0] if candidates else None
+
+                if not audio_path:
+                    return jsonify({'error': 'File audio tidak ditemukan'}), 500
+
+                dl_name = f'miitok_audio.{ext}'
 
             @after_this_request
             def cleanup_audio(response):
-                try: os.remove(audio_path)
-                except: pass
+                try:
+                    os.remove(audio_path)
+                except Exception:
+                    pass
                 return response
 
-            return send_file(audio_path, as_attachment=True, download_name='miitok_audio.mp3')
+            return send_file(audio_path, as_attachment=True, download_name=dl_name)
 
         else:
             format_map = {
@@ -101,22 +173,13 @@ def download():
 
             output_path = f"/tmp/{tmp_id}.mp4"
 
-            # Cek dulu apakah foto/slideshow tanpa download
+            # Cek preview dulu (tanpa download)
             check_opts = {'quiet': True, 'skip_download': True}
             with yt_dlp.YoutubeDL(check_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
 
-            # Kalau slideshow/foto
-            if info.get('_type') == 'playlist' or 'images' in str(info.get('formats', '')):
-                photo_urls = []
-                entries = info.get('entries') or []
-                for entry in entries:
-                    thumb = entry.get('thumbnail') or entry.get('url')
-                    if thumb:
-                        photo_urls.append(thumb)
-                if photo_urls:
-                    return jsonify({'type': 'photos', 'urls': photo_urls})
-                return jsonify({'error': 'Slideshow foto tidak dapat diproses'}), 400
+            if info.get('_type') == 'playlist':
+                return jsonify({'error': 'Ini konten foto/slideshow, tidak bisa didownload sebagai video'}), 400
 
             ydl_opts = {
                 'outtmpl': output_path,
@@ -129,23 +192,30 @@ def download():
 
             if not os.path.exists(output_path):
                 candidates = glob.glob(f"/tmp/{tmp_id}.*")
-                if candidates:
-                    output_path = candidates[0]
-                else:
-                    return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
+                output_path = candidates[0] if candidates else None
+
+            if not output_path:
+                return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
 
             @after_this_request
             def cleanup_video(response):
-                try: os.remove(output_path)
-                except: pass
+                try:
+                    os.remove(output_path)
+                except Exception:
+                    pass
                 return response
 
             return send_file(output_path, as_attachment=True, download_name='miitok_video.mp4')
 
     except yt_dlp.utils.DownloadError as e:
-        return jsonify({'error': 'Download gagal: ' + str(e)[:150]}), 500
+        msg = str(e)
+        if 'Sign in' in msg or 'login' in msg.lower():
+            return jsonify({'error': 'Video ini memerlukan login TikTok'}), 500
+        return jsonify({'error': 'Download gagal. Pastikan link valid dan coba lagi.'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)[:200]}), 500
+        return jsonify({'error': str(e)[:180]}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+        
