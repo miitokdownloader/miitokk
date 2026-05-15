@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file, Response
 import yt_dlp
 import os
 import uuid
+import shutil
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -46,6 +47,8 @@ def download():
         output_path = f"/tmp/{filename}"
         
         if quality == 'audio':
+            if shutil.which('ffmpeg') is None:
+                return jsonify({'error': 'MP3 conversion requires FFmpeg installed on the server.'}), 400
             ydl_opts = {
                 'outtmpl': output_path.replace('.mp4', '.mp3'),
                 'format': 'bestaudio/best',
@@ -66,7 +69,6 @@ def download():
                 'best': 'bestvideo+bestaudio/best',
                 '1080p': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
                 '720p': 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-                '480p': 'bestvideo[height<=480]+bestaudio/best[height<=480]',
             }
             ydl_opts = {
                 'outtmpl': output_path,
@@ -88,7 +90,9 @@ def download():
             )
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        err_str = str(e)
+        err_msg = err_str[:200] + ('...' if len(err_str) > 200 else '')
+        return jsonify({'error': err_msg}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
