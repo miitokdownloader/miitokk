@@ -4,9 +4,73 @@ import os
 import uuid
 import shutil
 import glob
+import re
+import time
+import threading
+from urllib.parse import urlparse
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+_rate_lock = threading.Lock()
+_rate_store = {}  # {ip: last_request_timestamp}
+RATE_LIMIT_SECONDS = 10
+
+
+def _check_rate_limit(ip):
+    """Return True if the request is allowed, False if rate-limited."""
+    now = time.time()
+    with _rate_lock:
+        last = _rate_store.get(ip)
+        if last is not None and (now - last) < RATE_LIMIT_SECONDS:
+            return False
+        _rate_store[ip] = now
+        return True
+
+
+# ---------------------------------------------------------------------------
+# URL validation
+# ---------------------------------------------------------------------------
+TIKTOK_DOMAINS = {'tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com', 'www.tiktok.com'}
+
+
+def _is_valid_tiktok_url(url):
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = parsed.netloc.lower()
+        # Strip port if present
+        host = host.split(':')[0]
+        return host in TIKTOK_DOMAINS
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "media-src 'self' blob:;"
+    )
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 @app.route('/static/makima.mp4')
 def serve_video():
     video_path = os.path.join(app.static_folder, 'makima.mp4')
@@ -48,6 +112,9 @@ def preview():
     if not url:
         return jsonify({'error': 'URL kosong'}), 400
 
+    if not _is_valid_tiktok_url(url):
+        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
     try:
         ydl_opts = {
             'quiet': True,
@@ -80,7 +147,7 @@ def preview():
         return jsonify(result)
 
     except Exception as e:
-        return jsonify({'error': str(e)[:100]}), 500
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
 @app.route('/download', methods=['POST'])
@@ -97,8 +164,21 @@ def download():
 
     if not url:
         return jsonify({'error': 'Masukkan link TikTok dulu'}), 400
+
+    if not _is_valid_tiktok_url(url):
+        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
+    # Quality validation
+    valid_qualities = {'best', '1080', '720', 'audio'}
     if not quality:
         quality = 'best'
+    elif quality not in valid_qualities:
+        return jsonify({'error': 'Kualitas tidak valid'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     tmp_id = str(uuid.uuid4())
 
@@ -130,6 +210,11 @@ def download():
                     audio_path = candidates[0] if candidates else None
 
                 if not audio_path:
+                    for f in glob.glob(audio_base + '.*'):
+                        try:
+                            os.remove(f)
+                        except Exception:
+                            pass
                     return jsonify({'error': 'File audio tidak ditemukan'}), 500
 
                 dl_name = 'miitok_audio.mp3'
@@ -150,6 +235,11 @@ def download():
                     audio_path = candidates[0] if candidates else None
 
                 if not audio_path:
+                    for f in glob.glob(audio_base + '.*'):
+                        try:
+                            os.remove(f)
+                        except Exception:
+                            pass
                     return jsonify({'error': 'File audio tidak ditemukan'}), 500
 
                 dl_name = f'miitok_audio.{ext}'
@@ -179,6 +269,11 @@ def download():
                 info = ydl.extract_info(url, download=False)
 
             if info.get('_type') == 'playlist':
+                for f in glob.glob(f"/tmp/{tmp_id}.*"):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
                 return jsonify({'error': 'Ini konten foto/slideshow, tidak bisa didownload sebagai video'}), 400
 
             ydl_opts = {
@@ -195,6 +290,11 @@ def download():
                 output_path = candidates[0] if candidates else None
 
             if not output_path:
+                for f in glob.glob(f"/tmp/{tmp_id}.*"):
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
                 return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
 
             @after_this_request
@@ -213,9 +313,8 @@ def download():
             return jsonify({'error': 'Video ini memerlukan login TikTok'}), 500
         return jsonify({'error': 'Download gagal. Pastikan link valid dan coba lagi.'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)[:180]}), 500
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-        
