@@ -86,11 +86,7 @@ def download():
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                
-                # Cek kalau foto/slideshow
-                if info.get('_type') == 'playlist':
-                    return jsonify({'error': 'Ini slideshow foto, belum support download foto TikTok'}), 400
-                    
+
             @after_this_request
             def cleanup_video(response):
                 try:
@@ -98,6 +94,11 @@ def download():
                 except OSError:
                     pass
                 return response
+
+            # Cek kalau foto/slideshow
+            if info.get('_type') == 'playlist':
+                return jsonify({'error': 'Ini slideshow foto, belum support download foto TikTok'}), 400
+
             return send_file(
                 output_path,
                 as_attachment=True,
