@@ -1,498 +1,729 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiiTok Downloader</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiiTok — TikTok Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            min-height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            background: #0a0a0a;
-        }
+  <style>
+    /* ── VARIABLES ───────────────────────────────────── */
+    :root {
+      --red:        #cc0000;
+      --red-deep:   #880000;
+      --red-glow:   rgba(204,0,0,0.45);
+      --red-soft:   rgba(204,0,0,0.18);
+      --white:      #f5ede0;
+      --white-dim:  rgba(245,237,224,0.7);
+      --black:      #0a0806;
+      --glass:      rgba(8,4,4,0.55);
+      --glass-border: rgba(204,0,0,0.3);
+      --overlay:    rgba(5,2,2,0.30);
+      --font-logo:  'Cinzel', serif;
+      --font-sub:   'Cormorant Garamond', serif;
+      --font-ui:    'Rajdhani', sans-serif;
+    }
 
-        /* ===== BACKGROUND VIDEO ===== */
-        .bg-video {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            min-width: 100%; min-height: 100%;
-            width: auto; height: auto;
-            z-index: 0;
-            filter: brightness(0.4) saturate(2);
-        }
+    /* ── RESET ───────────────────────────────────────── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; }
 
-        /* ===== OVERLAY ===== */
-        .overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.35);
-            z-index: 1;
-        }
+    body {
+      font-family: var(--font-ui);
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-        /* ===== PAGE WRAPPER ===== */
-        .page-wrapper {
-            position: relative;
-            z-index: 2;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 32px 16px 48px;
-        }
+    /* ── BACKGROUND VIDEO ────────────────────────────── */
+    .bg-video {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100%; min-height: 100%;
+      width: auto; height: auto;
+      z-index: 0;
+      object-fit: cover;
+      filter: brightness(0.72) saturate(1.3);
+    }
 
-        /* ===== HEADER ===== */
-        .header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 1;
+    }
 
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2.2rem, 6vw, 4rem);
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: 8px;
-            text-shadow: 0 0 10px #cc0000, 0 0 30px #cc0000, 0 0 60px #cc0000;
-        }
+    /* ── PAGE WRAPPER ────────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 64px;
+    }
 
-        .tagline {
-            color: #cc0000;
-            font-size: 0.78rem;
-            letter-spacing: 4px;
-            margin-top: 6px;
-        }
+    /* ── HEADER ──────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
 
-        .divider {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #cc0000, transparent);
-            margin: 12px auto 0;
-        }
+    .logo {
+      font-family: var(--font-logo);
+      font-size: clamp(2.8rem, 8vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: var(--white);
+      text-shadow:
+        0 0 12px var(--red-glow),
+        0 0 40px rgba(204,0,0,0.25),
+        0 2px 4px rgba(0,0,0,0.8);
+      line-height: 1;
+    }
 
-        /* ===== MAIN PANEL ===== */
-        .main-panel {
-            width: 100%;
-            max-width: 700px;
-        }
+    .subtitle {
+      font-family: var(--font-sub);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(0.75rem, 2vw, 0.9rem);
+      letter-spacing: 0.3em;
+      color: rgba(204,0,0,0.85);
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
 
-        /* ===== QUALITY TABS ===== */
-        .quality-select {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
+    .divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      margin: 14px auto 0;
+    }
 
-        .quality-btn {
-            background: transparent;
-            border: 1px solid #cc000055;
-            color: #888;
-            padding: 7px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 600;
-            font-size: 0.82rem;
-            letter-spacing: 2px;
-            transition: all 0.2s;
-        }
+    /* ── MAIN CARD ───────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 28px 24px 32px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow:
+        0 0 40px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(204,0,0,0.08) inset;
+    }
 
-        .quality-btn.active {
-            background: #cc0000;
-            border-color: #cc0000;
-            color: #fff;
-            box-shadow: 0 0 12px #cc000088;
-        }
+    /* ── QUALITY SELECTOR ────────────────────────────── */
+    .quality-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
 
-        .quality-btn:not(.active):hover {
-            border-color: #cc0000aa;
-            color: #ccc;
-        }
+    .q-btn {
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      padding: 7px 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(204,0,0,0.35);
+      background: transparent;
+      color: rgba(245,237,224,0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+      outline: none;
+    }
 
-        /* ===== INPUT ===== */
-        .input-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            align-items: stretch;
-            width: 100%;
-        }
+    .q-btn:hover {
+      border-color: var(--red);
+      color: var(--white);
+    }
 
-        .input-box {
-            flex: 1;
-            width: 100%;
-            box-sizing: border-box;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid #cc000055;
-            border-radius: 8px;
-            padding: 14px 18px;
-            color: #fff;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1rem;
-            outline: none;
-            backdrop-filter: blur(10px);
-            transition: border 0.3s;
-        }
+    .q-btn.active {
+      background: rgba(204,0,0,0.15);
+      border-color: var(--red);
+      color: var(--white);
+      box-shadow: 0 0 14px var(--red-glow), inset 0 0 8px rgba(204,0,0,0.1);
+      text-shadow: 0 0 8px var(--red-glow);
+    }
 
-        .input-box:focus {
-            border-color: #cc0000;
-            box-shadow: 0 0 15px #cc000033;
-        }
+    .q-btn .music-icon { font-size: 0.7rem; margin-right: 4px; opacity: 0.9; }
 
-        .input-box::placeholder { color: #444; }
+    /* ── INPUT ───────────────────────────────────────── */
+    .input-wrap {
+      position: relative;
+      margin-bottom: 6px;
+    }
 
-        /* ===== LOADING SPINNER ===== */
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
+    .url-input {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(204,0,0,0.3);
+      border-radius: 10px;
+      padding: 14px 48px 14px 18px;
+      color: var(--white);
+      font-family: var(--font-ui);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      caret-color: var(--red);
+    }
 
-        .loading.show { display: block; }
+    .url-input::placeholder { color: rgba(245,237,224,0.25); }
 
-        .spinner {
-            width: 44px;
-            height: 44px;
-            border: 3px solid #222;
-            border-top: 3px solid #cc0000;
-            border-right: 3px solid #cc000066;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto 10px;
-        }
+    .url-input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(204,0,0,0.12);
+    }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+    .clear-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: rgba(245,237,224,0.3);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: none;
+      line-height: 1;
+      padding: 4px;
+    }
 
-        .loading-text {
-            color: #cc0000;
-            font-size: 0.78rem;
-            letter-spacing: 3px;
-            animation: pulse-text 1.2s ease-in-out infinite;
-        }
+    .clear-btn.visible { display: block; }
 
-        @keyframes pulse-text {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.2; }
-        }
+    /* ── PREVIEW CARD ────────────────────────────────── */
+    .preview-card {
+      display: none;
+      margin: 14px 0 0;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(204,0,0,0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      animation: fadeSlideIn 0.3s ease;
+    }
 
-        /* ===== PHOTO GRID ===== */
-        .photo-grid {
-            display: none;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-        }
+    .preview-card.show { display: flex; align-items: stretch; }
 
-        .photo-grid.show { display: grid; }
+    .preview-thumb {
+      width: 100px;
+      min-width: 100px;
+      object-fit: cover;
+      display: block;
+    }
 
-        .photo-item {
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #cc000044;
-        }
+    .preview-info {
+      padding: 12px 14px;
+      flex: 1;
+      min-width: 0;
+    }
 
-        .photo-item img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-        }
+    .preview-title {
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
 
-        .photo-dl-btn {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(204,0,0,0.85);
-            color: #fff;
-            border: none;
-            padding: 8px;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            cursor: pointer;
-        }
+    .preview-meta {
+      font-size: 0.75rem;
+      color: rgba(245,237,224,0.45);
+      letter-spacing: 0.05em;
+    }
 
-        .dl-all-btn {
-            display: none;
-            margin-top: 12px;
-            background: transparent;
-            border: 1px solid #cc0000;
-            color: #cc0000;
-            padding: 10px;
-            border-radius: 8px;
-            width: 100%;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            letter-spacing: 2px;
-            cursor: pointer;
-        }
+    .preview-meta span { margin-right: 10px; }
 
-        .dl-all-btn.show { display: block; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-        /* ===== STATUS ===== */
-        .status {
-            margin-top: 16px;
-            font-size: 0.88rem;
-            letter-spacing: 1px;
-            min-height: 22px;
-            text-align: center;
-            max-width: 90%;
-            margin-left: auto;
-            margin-right: auto;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
+    /* ── DOWNLOAD BUTTON ─────────────────────────────── */
+    .dl-wrap {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
 
-        .status.success { color: #00cc66; }
-        .status.error   { color: #ff3333; }
+    /* Animated ring */
+    .ring-svg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100% + 28px);
+      max-width: 380px;
+      height: calc(100% + 28px);
+      pointer-events: none;
+      opacity: 0.55;
+    }
 
-        .footer {
-            margin-top: 40px;
-            color: #333;
-            font-size: 0.72rem;
-            letter-spacing: 2px;
-            text-align: center;
-        }
+    .ring-svg circle {
+      fill: none;
+      stroke: var(--red);
+      stroke-width: 1;
+      stroke-dasharray: 6 14;
+      animation: ringRotate 8s linear infinite;
+      transform-origin: center;
+    }
 
-        /* ===== MAIN DOWNLOAD BUTTON ===== */
-        .dl-btn-wrapper {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 28px;
-        }
+    @keyframes ringRotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
 
-        .dl-main-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 280px;
-            height: 72px;
-            border: 1px solid #cc0000;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1a0000 0%, #330000 50%, #1a0000 100%);
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            font-weight: 900;
-            letter-spacing: 5px;
-            cursor: pointer;
-            box-shadow: 0 0 18px #cc000066, 0 0 40px #cc000033, inset 0 0 20px #cc000022;
-            animation: btn-pulse 2.5s ease-in-out infinite;
-            transition: transform 0.2s, box-shadow 0.2s;
-            white-space: nowrap;
-        }
+    .dl-btn {
+      position: relative;
+      z-index: 1;
+      font-family: var(--font-logo);
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.25em;
+      color: var(--white);
+      background: linear-gradient(135deg, rgba(180,0,0,0.9) 0%, rgba(100,0,0,0.95) 100%);
+      border: 1px solid rgba(204,0,0,0.7);
+      border-radius: 10px;
+      padding: 16px 0;
+      width: 100%;
+      max-width: 320px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.25s;
+      box-shadow:
+        0 0 20px rgba(204,0,0,0.35),
+        0 4px 16px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      animation: btnBreath 3s ease-in-out infinite;
+    }
 
-        @keyframes btn-pulse {
-            0%, 100% { box-shadow: 0 0 18px #cc000066, 0 0 40px #cc000033, inset 0 0 20px #cc000022; }
-            50%       { box-shadow: 0 0 28px #cc0000aa, 0 0 60px #cc000055, inset 0 0 30px #cc000044; }
-        }
+    @keyframes btnBreath {
+      0%, 100% { box-shadow: 0 0 20px rgba(204,0,0,0.35), 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
+      50%       { box-shadow: 0 0 30px rgba(204,0,0,0.55), 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); }
+    }
 
-        .dl-main-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 32px #cc0000cc, 0 0 70px #cc000066, inset 0 0 30px #cc000044;
-        }
+    .dl-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 36px rgba(204,0,0,0.6), 0 8px 24px rgba(0,0,0,0.6);
+      animation: none;
+    }
 
-        .dl-main-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-            animation: none;
-        }
+    .dl-btn:active { transform: translateY(0); }
 
-        /* ===== DESKTOP (768px+) ===== */
-        @media (min-width: 768px) {
-            .page-wrapper { padding: 40px 32px 60px; }
-            .logo { font-size: 4rem; }
-            .main-panel { max-width: 800px; }
-            .dl-main-btn { width: 320px; height: 80px; font-size: 1.1rem; }
-        }
+    .dl-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      animation: none;
+    }
 
-        /* ===== MOBILE (<= 600px) ===== */
-        @media (max-width: 600px) {
-            .main-panel { padding: 0 24px; }
-            .dl-main-btn { width: 100%; }
-            .quality-select { flex-wrap: wrap; justify-content: center; }
-        }
+    /* ── SPINNER ─────────────────────────────────────── */
+    .spinner-wrap {
+      display: none;
+      text-align: center;
+      padding: 20px 0 4px;
+    }
 
-        /* ===== NARROW SCREENS (<400px) ===== */
-        @media (max-width: 400px) {
-            .dl-main-btn { width: 100%; }
-        }
-    </style>
+    .spinner-wrap.show { display: block; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(204,0,0,0.15);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      color: rgba(204,0,0,0.7);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* ── STATUS ──────────────────────────────────────── */
+    .status {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      min-height: 20px;
+      text-align: center;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      line-height: 1.5;
+    }
+
+    .status.ok  { color: #55cc88; }
+    .status.err { color: #ff4444; }
+
+    /* ── FOOTER ──────────────────────────────────────── */
+    .footer {
+      margin-top: 40px;
+      font-family: var(--font-sub);
+      font-style: italic;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: rgba(204,0,0,0.35);
+      text-align: center;
+    }
+
+    /* ────────────────────────────────────────────────── */
+    /*  MODAL                                             */
+    /* ────────────────────────────────────────────────── */
+
+    /* Backdrop */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-backdrop.show { display: flex; align-items: flex-end; justify-content: center; }
+
+    @media (min-width: 640px) {
+      .modal-backdrop.show { align-items: center; }
+    }
+
+    /* Modal box */
+    .modal {
+      background: rgba(12,4,4,0.97);
+      border: 1px solid rgba(204,0,0,0.4);
+      border-bottom: none;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 28px 24px 32px;
+      position: relative;
+      animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+      box-shadow: 0 -8px 48px rgba(204,0,0,0.2), 0 0 0 1px rgba(204,0,0,0.12);
+    }
+
+    @media (min-width: 640px) {
+      .modal {
+        border: 1px solid rgba(204,0,0,0.4);
+        border-radius: 16px;
+        animation: fadeScale 0.25s ease;
+      }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeScale {
+      from { transform: scale(0.95); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Drag handle (mobile) */
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: rgba(204,0,0,0.3);
+      border-radius: 2px;
+      margin: 0 auto 22px;
+    }
+
+    @media (min-width: 640px) { .modal-handle { display: none; } }
+
+    .modal-title {
+      font-family: var(--font-logo);
+      font-size: 0.85rem;
+      letter-spacing: 0.25em;
+      color: rgba(204,0,0,0.8);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Thumbnail row */
+    .modal-thumb-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 20px;
+      min-height: 0;
+    }
+
+    .modal-thumb {
+      width: 80px; height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid rgba(204,0,0,0.25);
+      flex-shrink: 0;
+      display: none;
+    }
+
+    .modal-thumb.show { display: block; }
+
+    .modal-video-info { flex: 1; min-width: 0; }
+
+    .modal-video-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .modal-video-uploader {
+      font-size: 0.75rem;
+      color: rgba(245,237,224,0.4);
+    }
+
+    /* Info pills */
+    .modal-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(204,0,0,0.3);
+      color: rgba(245,237,224,0.65);
+      background: rgba(204,0,0,0.06);
+    }
+
+    .pill.highlight {
+      border-color: var(--red);
+      color: var(--white);
+      background: rgba(204,0,0,0.15);
+    }
+
+    /* Modal buttons */
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-dl-btn {
+      font-family: var(--font-logo);
+      font-weight: 600;
+      font-size: 0.92rem;
+      letter-spacing: 0.2em;
+      color: var(--white);
+      background: linear-gradient(135deg, rgba(180,0,0,0.9), rgba(100,0,0,0.95));
+      border: 1px solid rgba(204,0,0,0.6);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      box-shadow: 0 0 18px rgba(204,0,0,0.3);
+    }
+
+    .modal-dl-btn:hover { box-shadow: 0 0 28px rgba(204,0,0,0.55); transform: translateY(-1px); }
+
+    .modal-secondary-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-sec-btn {
+      flex: 1;
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      padding: 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      background: transparent;
+    }
+
+    .modal-sec-btn.cancel {
+      border: 1px solid rgba(245,237,224,0.12);
+      color: rgba(245,237,224,0.4);
+    }
+
+    .modal-sec-btn.cancel:hover { border-color: rgba(245,237,224,0.3); color: rgba(245,237,224,0.7); }
+
+    .modal-sec-btn.copy {
+      border: 1px solid rgba(204,0,0,0.3);
+      color: rgba(204,0,0,0.7);
+    }
+
+    .modal-sec-btn.copy:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── DESKTOP TWEAKS ──────────────────────────────── */
+    @media (min-width: 768px) {
+      .page { padding: 64px 40px 80px; }
+      .card { padding: 36px 36px 40px; }
+      .logo { letter-spacing: 0.22em; }
+    }
+  </style>
 </head>
 <body>
-    <video class="bg-video" autoplay muted loop playsinline>
-        <source src="/static/makima.mp4" type="video/mp4">
-    </video>
-    <div class="overlay"></div>
 
-    <div class="page-wrapper">
-        <div class="header">
-            <div class="logo">MIITOK</div>
-            <div class="tagline">TIKTOK DOWNLOADER — NO WATERMARK</div>
-            <div class="divider"></div>
+  <!-- Background -->
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/makima.mp4" type="video/mp4" />
+  </video>
+  <div class="bg-overlay"></div>
+
+  <!-- Page -->
+  <div class="page">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">MIITOK</div>
+      <div class="subtitle">TikTok Downloader &mdash; No Watermark</div>
+      <div class="divider"></div>
+    </header>
+
+    <!-- Card -->
+    <div class="card">
+
+      <!-- Quality -->
+      <div class="quality-row">
+        <button class="q-btn active" onclick="setQuality(this,'best')">BEST</button>
+        <button class="q-btn" onclick="setQuality(this,'1080')">1080P</button>
+        <button class="q-btn" onclick="setQuality(this,'720')">720P</button>
+        <button class="q-btn" onclick="setQuality(this,'audio')"><span class="music-icon">♪</span>AUDIO</button>
+      </div>
+
+      <!-- Input -->
+      <div class="input-wrap">
+        <input
+          id="urlInput"
+          class="url-input"
+          type="text"
+          placeholder="Paste link TikTok di sini..."
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          oninput="onUrlInput()"
+        />
+        <button class="clear-btn" id="clearBtn" onclick="clearUrl()" title="Hapus">✕</button>
+      </div>
+
+      <!-- Preview card -->
+      <div class="preview-card" id="previewCard">
+        <img class="preview-thumb" id="previewThumb" src="" alt="" />
+        <div class="preview-info">
+          <div class="preview-title" id="previewTitle"></div>
+          <div class="preview-meta">
+            <span id="previewUploader"></span>
+            <span id="previewDuration"></span>
+          </div>
         </div>
+      </div>
 
-        <div class="main-panel">
-            <div class="quality-select">
-                <button class="quality-btn active" onclick="setQuality(this,'best')">BEST</button>
-                <button class="quality-btn" onclick="setQuality(this,'1080')">1080P</button>
-                <button class="quality-btn" onclick="setQuality(this,'720')">720P</button>
-                <button class="quality-btn" onclick="setQuality(this,'audio')">&#9834; AUDIO</button>
-            </div>
+      <!-- Download button -->
+      <div class="dl-wrap">
+        <svg class="ring-svg" viewBox="0 0 320 60" preserveAspectRatio="none" aria-hidden="true">
+          <rect x="2" y="2" width="316" height="56" rx="10" ry="10"
+                fill="none" stroke="#cc0000" stroke-width="1"
+                stroke-dasharray="8 16"
+                style="animation: ringRotate 10s linear infinite; transform-origin: center;" />
+        </svg>
+        <button class="dl-btn" id="dlBtn" onclick="openModal()">DOWNLOAD</button>
+      </div>
 
-            <div class="input-row">
-                <input class="input-box" id="urlInput"
-                       placeholder="Paste link TikTok di sini..."
-                       type="text"/>
-            </div>
+      <!-- Spinner -->
+      <div class="spinner-wrap" id="spinnerWrap">
+        <div class="spinner"></div>
+        <div class="spinner-label">MEMPROSES&hellip;</div>
+      </div>
 
-            <div class="dl-btn-wrapper">
-                <button class="dl-main-btn" id="dlBtn" onclick="startDownload()">DOWNLOAD</button>
-            </div>
+      <!-- Status -->
+      <div class="status" id="status"></div>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <div class="loading-text">MEMPROSES...</div>
-            </div>
+    </div><!-- /card -->
 
-            <div class="photo-grid" id="photoGrid"></div>
-            <button class="dl-all-btn" id="dlAllBtn" onclick="downloadAll()">&#11015; DOWNLOAD SEMUA FOTO</button>
+    <div class="footer">MIITOK &copy; 2025 &mdash; Free &amp; No Watermark</div>
+  </div>
 
-            <div class="status" id="status"></div>
+  <!-- ── MODAL ─────────────────────────────────────── -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="backdropClick(event)">
+    <div class="modal" id="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">KONFIRMASI DOWNLOAD</div>
+
+      <div class="modal-thumb-row">
+        <img class="modal-thumb" id="modalThumb" src="" alt="" />
+        <div class="modal-video-info">
+          <div class="modal-video-title" id="modalTitle">TikTok Video</div>
+          <div class="modal-video-uploader" id="modalUploader"></div>
         </div>
+      </div>
 
-        <div class="footer">MIITOK &copy; 2025 &mdash; FREE &amp; NO WATERMARK</div>
+      <div class="modal-pills" id="modalPills"></div>
+
+      <div class="modal-actions">
+        <button class="modal-dl-btn" onclick="confirmDownload()">DOWNLOAD NOW</button>
+        <div class="modal-secondary-row">
+          <button class="modal-sec-btn cancel" onclick="closeModal()">CANCEL</button>
+          <button class="modal-sec-btn copy" onclick="copyLink()">COPY LINK</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        let selectedQuality = 'best';
-        let isDownloading = false;
-        let photoUrls = [];
+  <script>
+    /* ── STATE ────────────────────────────────────── */
+    let selectedQuality = 'best';
+    let isDownloading   = false;
+    let previewData     = null;
+    let previewTimer    = null;
 
-        function setQuality(el, q) {
-            document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            selectedQuality = q;
-        }
+    const qualityLabel = { best:'BEST', '1080':'1080P', '720':'720P', audio:'MP3 AUDIO' };
+    const typeLabel    = { best:'MP4', '1080':'MP4', '720':'MP4', audio:'MP3' };
 
-        function formatError(msg) {
-            if (/ffmpeg/i.test(msg)) {
-                return 'MP3 requires FFmpeg on server.';
-            }
-            if (msg.length > 60) {
-                return msg.substring(0, 60) + '...';
-            }
-            return msg;
-        }
+    /* ── QUALITY ──────────────────────────────────── */
+    function setQuality(el, q) {
+      document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      selectedQuality = q;
+    }
 
-        async function startDownload() {
-            if (isDownloading) return;
-            const urlInput = document.getElementById('urlInput');
-            const url = urlInput.value.trim();
-            const status = document.getElementById('status');
-            const loading = document.getElementById('loading');
-            const btn = document.getElementById('dlBtn');
-            const photoGrid = document.getElementById('photoGrid');
-            const dlAllBtn = document.getElementById('dlAllBtn');
+    /* ── INPUT ────────────────────────────────────── */
+    function onUrlInput() {
+      const val = document.getElementById('urlInput').value.trim();
+      const clearBtn = document.getElementById('clearBtn');
+      clearBtn.classList.toggle('visible', val.length > 0);
 
-            if (!url) {
-                status.className = 'status error';
-                status.textContent = '⚠ MASUKKAN LINK TIKTOK DULU';
-                return;
-            }
+      clearTimeout(previewTimer);
+      hidePreview();
+      setStatus('', '');
 
-            isDownloading = true;
-            btn.disabled = true;
-            loading.classList.add('show');
-            status.className = 'status';
-            status.textContent = '';
-            photoGrid.classList.remove('show');
-            photoGrid.innerHTML = '';
-            dlAllBtn.classList.remove('show');
+      if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok'))) {
+        previewTimer = setTimeout(() => fetchPreview(val), 900);
+      }
+    }
 
-            try {
-                const fd = new FormData();
-                fd.append('url', urlInput.value.trim());
-                fd.append('quality', selectedQuality);
-                const response = await fetch('/download', {
-                    method: 'POST',
-                    body: fd
-                });
-
-                const contentType = response.headers.get('content-type');
-
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await response.json();
-
-                    if (data.type === 'photos') {
-                        photoUrls = data.urls;
-                        photoGrid.classList.add('show');
-                        dlAllBtn.classList.add('show');
-                        data.urls.forEach((imgUrl, i) => {
-                            const item = document.createElement('div');
-                            item.className = 'photo-item';
-
-                            const img = document.createElement('img');
-                            img.setAttribute('src', imgUrl);
-                            img.setAttribute('alt', 'Photo ' + (i + 1));
-                            item.appendChild(img);
-
-                            const dlBtnEl = document.createElement('button');
-                            dlBtnEl.className = 'photo-dl-btn';
-                            dlBtnEl.textContent = '⬇ FOTO ' + (i + 1);
-                            dlBtnEl.addEventListener('click', () => downloadPhoto(imgUrl, i + 1));
-                            item.appendChild(dlBtnEl);
-
-                            photoGrid.appendChild(item);
-                        });
-                        status.className = 'status success';
-                        status.textContent = '✓ ' + data.urls.length + ' FOTO DITEMUKAN';
-                    } else {
-                        status.className = 'status error';
-                        status.textContent = '✗ ' + (data.error || 'Unknown error');
-                    }
-                } else if (response.ok) {
-                    const blob = await response.blob();
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = selectedQuality === 'audio' ? 'miitok_audio.mp3' : 'miitok_video.mp4';
-                    a.click();
-                    status.className = 'status success';
-                    status.textContent = '✓ DOWNLOAD BERHASIL!';
-                }
-            } catch(e) {
-                status.className = 'status error';
-                status.textContent = '✗ ERROR: ' + formatError(e.message);
-            } finally {
-                btn.disabled = false;
-                isDownloading = false;
-                loading.classList.remove('show');
-            }
-        }
-
-        function downloadPhoto(url, num) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'miitok_photo_' + num + '.jpg';
-            a.target = '_blank';
-            a.click();
-        }
-
-        function downloadAll() {
-            photoUrls.forEach((url, i) => {
-                setTimeout(() => downloadPhoto(url, i + 1), i * 500);
-            });
-        }
-
-    </script>
-</body>
-</html>
+    function clearUrl() {
+      document.getElementById('urlInput').value = '';
+      document.getElementById('clearBtn').classLis
