@@ -232,9 +232,6 @@
             50%       { box-shadow: 0 0 20px #ff0066aa, 0 0 40px #ff006655; }
         }
 
-        /* AUDIO tab is redundant with the dedicated MP3 button */
-        .quality-btn[onclick*="audio"] { display: none; }
-
         .neon-btn:hover { transform: translateY(-2px); }
 
         .neon-btn:disabled {
@@ -491,7 +488,6 @@
                 <button class="quality-btn" onclick="setQuality(this,'1080p')">1080P</button>
                 <button class="quality-btn" onclick="setQuality(this,'720p')">720P</button>
                 <button class="quality-btn" onclick="setQuality(this,'480p')">480P</button>
-                <button class="quality-btn" onclick="setQuality(this,'audio')">AUDIO</button>
             </div>
 
             <div class="input-row">
@@ -553,6 +549,14 @@
                 return;
             }
 
+            // Guard: if quality was somehow set to audio, delegate to the MP3 button instead
+            if (selectedQuality === 'audio') {
+                selectedQuality = 'best';
+                document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+                const bestBtn = document.querySelector('.quality-btn');
+                if (bestBtn) bestBtn.classList.add('active');
+            }
+
             btn.disabled = true;
             audioBtn.disabled = true;
             loading.classList.add('show');
@@ -579,13 +583,21 @@
                         photoGrid.classList.add('show');
                         dlAllBtn.classList.add('show');
                         data.urls.forEach((imgUrl, i) => {
-                            photoGrid.innerHTML += `
-                                <div class="photo-item">
-                                    <img src="${imgUrl}" alt="Photo ${i+1}"/>
-                                    <button class="photo-dl-btn" onclick="downloadPhoto('${imgUrl}', ${i+1})">
-                                        ⬇ FOTO ${i+1}
-                                    </button>
-                                </div>`;
+                            const item = document.createElement('div');
+                            item.className = 'photo-item';
+
+                            const img = document.createElement('img');
+                            img.setAttribute('src', imgUrl);
+                            img.setAttribute('alt', 'Photo ' + (i + 1));
+                            item.appendChild(img);
+
+                            const dlBtn = document.createElement('button');
+                            dlBtn.className = 'photo-dl-btn';
+                            dlBtn.textContent = '⬇ FOTO ' + (i + 1);
+                            dlBtn.addEventListener('click', () => downloadPhoto(imgUrl, i + 1));
+                            item.appendChild(dlBtn);
+
+                            photoGrid.appendChild(item);
                         });
                         status.className = 'status success';
                         status.textContent = `✓ ${data.urls.length} FOTO DITEMUKAN`;
@@ -720,7 +732,11 @@
                 label.textContent = lbl;  // textContent, not innerHTML
                 card.appendChild(label);
 
-                card.onclick = () => window.open(src, '_blank');
+                card.onclick = () => {
+                    if (src.startsWith('https://') || src.startsWith('http://')) {
+                        window.open(src, '_blank');
+                    }
+                };
                 scroll.appendChild(card);
             });
         }
