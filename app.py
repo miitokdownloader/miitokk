@@ -15,18 +15,19 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 # Rate limiting
 # ---------------------------------------------------------------------------
 _rate_lock = threading.Lock()
-_rate_store = {}  # {ip: last_request_timestamp}
+_rate_store_download = {}  # {ip: last_request_timestamp} for /download
+_rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 RATE_LIMIT_SECONDS = 10
 
 
-def _check_rate_limit(ip):
+def _check_rate_limit(ip, store):
     """Return True if the request is allowed, False if rate-limited."""
     now = time.time()
     with _rate_lock:
-        last = _rate_store.get(ip)
+        last = store.get(ip)
         if last is not None and (now - last) < RATE_LIMIT_SECONDS:
             return False
-        _rate_store[ip] = now
+        store[ip] = now
         return True
 
 
@@ -178,9 +179,22 @@ def download():
         return jsonify({'error': 'Kualitas tidak valid'}), 400
 
     # Rate limiting
+    # NOTE: X-Forwarded-For is trusted unconditionally here.
+    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
+    # with x_for=1 to restrict header trust to one hop.
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(client_ip):
+    if not _check_rate_limit(client_ip, _rate_store_download):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
+
+    # Lightweight probe: reject slideshow/playlist before attempting video download
+    try:
+        _probe_opts = {'quiet': True, 'skip_download': True, 'noplaylist': False}
+        with yt_dlp.YoutubeDL(_probe_opts) as _ydl:
+            _probe = _ydl.extract_info(url, download=False)
+        if _probe and _probe.get('_type') == 'playlist':
+            return jsonify({'error': 'Ini konten foto/slideshow. Gunakan tab PHOTO untuk mengunduh.'}), 400
+    except Exception:
+        pass  # If probe fails, let the download attempt proceed and surface its own error
 
     tmp_id = str(uuid.uuid4())
 
@@ -193,12 +207,13 @@ def download():
 
         output_path = f"/tmp/{tmp_id}.mp4"
 
-        ffmpeg_dir = os.path.dirname(shutil.which('ffmpeg')) if shutil.which('ffmpeg') else None
+        _ffmpeg_bin = shutil.which('ffmpeg')
+        ffmpeg_dir = os.path.dirname(_ffmpeg_bin) if _ffmpeg_bin else None
         ydl_opts = {
             'outtmpl': output_path,
             'format': format_map.get(quality, format_map['best']),
             'merge_output_format': 'mp4',
-            'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],
+            'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],  # NOTE: yt-dlp uses single-r spelling (library's own typo)
             'postprocessor_args': {'ffmpeg': ['-movflags', '+faststart']},
             'quiet': True,
         }
@@ -254,8 +269,11 @@ def photos():
         return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
 
     # Rate limiting
+    # NOTE: X-Forwarded-For is trusted unconditionally here.
+    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
+    # with x_for=1 to restrict header trust to one hop.
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(client_ip):
+    if not _check_rate_limit(client_ip, _rate_store_photos):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     try:
@@ -282,17 +300,24 @@ def photos():
             return max(valid, key=lambda t: (t.get('width') or 0) * (t.get('height') or 0), default=None)
 
         # Check top-level 'images' key (some yt-dlp versions)
+        # Each item may be a dict with url/width/height for one slide at one resolution
+        # Group by picking highest-res: deduplicate by collecting all dicts, sort by area desc
+        # then add only if the URL hasn't been seen (to avoid adding multiple sizes of same slide)
         if info.get('images'):
-            for img in info['images']:
-                if isinstance(img, dict):
-                    # Sort by resolution descending and pick highest-res URL
+            imgs_raw = info['images']
+            dicts = [i for i in imgs_raw if isinstance(i, dict) and i.get('url', '').startswith('https://')]
+            strings = [str(i) for i in imgs_raw if not isinstance(i, dict) and str(i).startswith('https://')]
+            if dicts:
+                # Sort by resolution descending
+                dicts_sorted = sorted(dicts, key=lambda i: (i.get('width') or 0) * (i.get('height') or 0), reverse=True)
+                seen_urls = set()
+                for img in dicts_sorted:
                     u = img.get('url', '')
-                    if u.startswith('https://'):
+                    if u and u not in seen_urls:
                         photo_urls.append(u)
-                else:
-                    u = str(img)
-                    if u.startswith('https://'):
-                        photo_urls.append(u)
+                        seen_urls.add(u)
+            else:
+                photo_urls.extend(strings)
 
         # Check playlist entries (TikTok slideshow)
         if not photo_urls and info.get('_type') == 'playlist' and info.get('entries'):
@@ -343,6 +368,7 @@ def photos():
 
         title = info.get('title', '')
         uploader = info.get('uploader', '')
+        thumbnail = info.get('thumbnail', '')
 
         return jsonify({
             'type': 'photo',
@@ -351,6 +377,7 @@ def photos():
             'count': len(photo_urls),
             'title': title,
             'uploader': uploader,
+            'thumbnail': thumbnail,
         })
 
     except Exception as e:
