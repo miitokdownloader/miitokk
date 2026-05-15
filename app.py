@@ -372,8 +372,7 @@ def photo_proxy():
         return '', 400
     _parsed_host = urlparse(target_url).netloc.lower().split(':')[0]
     _ALLOWED_TIKTOK_HOSTS = (
-        'tiktokcdn.com', 'tiktokv.com', 'tiktok.com',
-        'p16-sign.tiktokcdn-us.com', 'p77-sign.tiktokcdn-us.com',
+        'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokv.com', 'tiktok.com',
     )
     if not any(_parsed_host == h or _parsed_host.endswith('.' + h) for h in _ALLOWED_TIKTOK_HOSTS):
         return '', 403

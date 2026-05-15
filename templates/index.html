@@ -1073,6 +1073,7 @@
     }
 
     function renderCarousel(photos, count) {
+      if (!isPhotoMode) return;
       const carousel  = document.getElementById('photoCarousel');
       const countEl   = document.getElementById('photoCount');
       const dlAllBtn  = document.getElementById('downloadAllBtn');
