@@ -175,7 +175,6 @@
             background: #111;
             border: none;
             cursor: pointer;
-            overflow: hidden;
             z-index: 0;
             transition: transform 0.2s;
             min-width: 160px;
@@ -219,9 +218,22 @@
         }
 
         @keyframes neon-pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.4; transform: scale(0.96); }
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
         }
+
+        /* Pulsing glow on the MP3 button element itself for visible breathing effect */
+        .btn-mp3 {
+            animation: btn-mp3-glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes btn-mp3-glow {
+            0%, 100% { box-shadow: 0 0 8px #ff006644, 0 0 20px #ff006622; }
+            50%       { box-shadow: 0 0 20px #ff0066aa, 0 0 40px #ff006655; }
+        }
+
+        /* AUDIO tab is redundant with the dedicated MP3 button */
+        .quality-btn[onclick*="audio"] { display: none; }
 
         .neon-btn:hover { transform: translateY(-2px); }
 
@@ -446,6 +458,18 @@
             .gallery-scroll { gap: 16px; }
             .thumb-card { width: 180px; height: 250px; }
         }
+
+        /* ===== NARROW SCREENS (<400px) ===== */
+        @media (max-width: 400px) {
+            .neon-btn {
+                width: 100%;
+                min-width: unset;
+            }
+            .btn-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
 </head>
 <body>
@@ -578,6 +602,8 @@
                     a.click();
                     status.className = 'status success';
                     status.textContent = '✓ DOWNLOAD BERHASIL!';
+                    // Reset gallery to demo state (video has no thumbnail preview)
+                    showDemoGallery();
                 }
             } catch(e) {
                 status.className = 'status error';
@@ -680,9 +706,20 @@
             thumbs.forEach((item, i) => {
                 const src = typeof item === 'string' ? item : item.url;
                 const lbl = typeof item === 'string' ? ('PHOTO ' + (i + 1)) : item.label;
+
                 const card = document.createElement('div');
                 card.className = 'thumb-card';
-                card.innerHTML = `<img src="${src}" alt="${lbl}"/><div class="thumb-label">${lbl}</div>`;
+
+                const img = document.createElement('img');
+                img.setAttribute('src', src);
+                img.setAttribute('alt', lbl);
+                card.appendChild(img);
+
+                const label = document.createElement('div');
+                label.className = 'thumb-label';
+                label.textContent = lbl;  // textContent, not innerHTML
+                card.appendChild(label);
+
                 card.onclick = () => window.open(src, '_blank');
                 scroll.appendChild(card);
             });
