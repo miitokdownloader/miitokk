@@ -178,14 +178,6 @@ def download():
     elif quality not in valid_qualities:
         return jsonify({'error': 'Kualitas tidak valid'}), 400
 
-    # Rate limiting
-    # NOTE: X-Forwarded-For is trusted unconditionally here.
-    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
-    # with x_for=1 to restrict header trust to one hop.
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(client_ip, _rate_store_download):
-        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
-
     # Lightweight probe: reject slideshow/playlist before attempting video download
     try:
         _probe_opts = {'quiet': True, 'skip_download': True, 'noplaylist': False}
@@ -195,6 +187,14 @@ def download():
             return jsonify({'error': 'Ini konten foto/slideshow. Gunakan tab PHOTO untuk mengunduh.'}), 400
     except Exception:
         pass  # If probe fails, let the download attempt proceed and surface its own error
+
+    # Rate limiting
+    # NOTE: X-Forwarded-For is trusted unconditionally here.
+    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
+    # with x_for=1 to restrict header trust to one hop.
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip, _rate_store_download):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     tmp_id = str(uuid.uuid4())
 
@@ -215,6 +215,7 @@ def download():
             'merge_output_format': 'mp4',
             'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],  # NOTE: yt-dlp uses single-r spelling (library's own typo)
             'postprocessor_args': {'ffmpeg': ['-movflags', '+faststart']},
+            'fixup': 'force',
             'quiet': True,
         }
         if ffmpeg_dir:
@@ -308,6 +309,10 @@ def photos():
             dicts = [i for i in imgs_raw if isinstance(i, dict) and i.get('url', '').startswith('https://')]
             strings = [str(i) for i in imgs_raw if not isinstance(i, dict) and str(i).startswith('https://')]
             if dicts:
+                # NOTE: If TikTok returns multiple resolution variants with distinct CDN URLs,
+                # all will be included here. The playlist-entry branch (below) handles this
+                # correctly per-entry. This path is used only for older yt-dlp that returns
+                # top-level 'images' without per-entry granularity.
                 # Sort by resolution descending
                 dicts_sorted = sorted(dicts, key=lambda i: (i.get('width') or 0) * (i.get('height') or 0), reverse=True)
                 seen_urls = set()
