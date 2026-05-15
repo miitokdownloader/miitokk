@@ -849,6 +849,14 @@
     /* ── QUALITY ──────────────────────────────────── */
     function setQuality(el, q) {
       isDownloading = false;
+      // Clear status and photo section on tab switch
+      setStatus('', '');
+      hidePreview();
+      document.getElementById('photoSection').style.display = 'none';
+      document.getElementById('photoCarousel').innerHTML = '';
+      document.getElementById('photoCount').textContent = '';
+      document.getElementById('downloadAllBtn').style.display = 'none';
+      photoUrls = [];
       document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       selectedQuality = q;
@@ -863,11 +871,6 @@
       } else {
         isPhotoMode = false;
         document.getElementById('dlWrap').style.display = '';
-        document.getElementById('photoSection').style.display = 'none';
-        document.getElementById('photoCarousel').innerHTML = '';
-        document.getElementById('photoCount').textContent = '';
-        document.getElementById('downloadAllBtn').style.display = 'none';
-        photoUrls = [];
       }
     }
 
@@ -1064,6 +1067,21 @@
           return;
         }
         renderCarousel(data.photos || [], data.count || 0);
+        // Show preview card with photo metadata if available
+        if (data.title || data.uploader || data.thumbnail) {
+          previewData = {
+            title: data.title || '',
+            uploader: data.uploader || '',
+            thumbnail: data.thumbnail || null,
+          };
+          document.getElementById('previewTitle').textContent = previewData.title;
+          document.getElementById('previewUploader').textContent = previewData.uploader ? '@' + previewData.uploader : '';
+          document.getElementById('previewDuration').textContent = '';
+          if (previewData.thumbnail) {
+            document.getElementById('previewThumb').src = previewData.thumbnail;
+          }
+          document.getElementById('previewCard').classList.add('show');
+        }
       } catch(e) {
         setStatus('Terjadi kesalahan saat mengambil foto.', 'err');
       } finally {
@@ -1080,10 +1098,10 @@
       const section   = document.getElementById('photoSection');
       carousel.innerHTML = '';
       if (!photos || !photos.length) {
-        countEl.textContent  = 'No photos found. This link may be a video.';
-        countEl.style.color  = 'rgba(204,0,0,0.5)';
+        setStatus('Tidak ada foto ditemukan. Link ini mungkin video, bukan slideshow.', 'err');
+        countEl.textContent = '';
         dlAllBtn.style.display = 'none';
-        section.style.display = 'block';
+        section.style.display = 'none';   // keep section hidden
         return;
       }
       photoUrls = photos;
