@@ -36,11 +36,14 @@ def index():
 
 @app.route('/download', methods=['POST'])
 def download():
-    url = request.json.get('url')
-    quality = request.json.get('quality', 'best')
-    
+    url = request.form.get('url')
+    quality = request.form.get('quality')
+
     if not url:
-        return jsonify({'error': 'URL kosong'}), 400
+        return jsonify({'error': 'Please paste TikTok URL'}), 400
+
+    if not quality:
+        return jsonify({'error': 'Please select quality'}), 400
     
     try:
         filename = f"{uuid.uuid4()}.mp4"
@@ -75,8 +78,8 @@ def download():
         else:
             format_map = {
                 'best': 'bestvideo+bestaudio/best',
-                '1080p': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
-                '720p': 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+                '1080': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+                '720': 'bestvideo[height<=720]+bestaudio/best[height<=720]',
             }
             ydl_opts = {
                 'outtmpl': output_path,
