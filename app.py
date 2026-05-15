@@ -320,44 +320,75 @@ def photos():
             info = ydl.extract_info(url, download=False)
 
         if not info:
-            return jsonify({'photos': [], 'count': 0, 'title': ''}), 200
+            return jsonify({'photos': [], 'images': [], 'count': 0, 'title': '', 'type': 'photo'}), 200
 
         photo_urls = []
 
-        if info.get('_type') == 'playlist' and info.get('entries'):
-            for entry in info['entries']:
+        # Helper: pick best thumbnail from a list
+        def best_thumbnail(thumbnails):
+            if not thumbnails:
+                return None
+            valid = [t for t in thumbnails if t.get('url', '').startswith('https://')]
+            if not valid:
+                return None
+            return max(valid, key=lambda t: (t.get('width') or 0) * (t.get('height') or 0), default=None)
+
+        # Check top-level 'images' key (some yt-dlp versions)
+        if info.get('images'):
+            for img in info['images']:
+                u = img.get('url', '') if isinstance(img, dict) else str(img)
+                if u.startswith('https://'):
+                    photo_urls.append(u)
+
+        # Check playlist entries (TikTok slideshow)
+        if not photo_urls and info.get('_type') == 'playlist' and info.get('entries'):
+            for entry in (info['entries'] or []):
                 if not entry:
                     continue
                 added = False
-                # Try direct URL — check if image-like
-                url_candidate = entry.get('url') or entry.get('webpage_url') or ''
-                if url_candidate.startswith('http'):
-                    if any(ext in url_candidate.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
-                        photo_urls.append(url_candidate)
+
+                # 1. Try 'images' key on entry
+                if entry.get('images'):
+                    for img in entry['images']:
+                        u = img.get('url', '') if isinstance(img, dict) else str(img)
+                        if u.startswith('https://'):
+                            photo_urls.append(u)
+                            added = True
+                            break
+
+                # 2. Try formats - look for image-like extensions
+                if not added:
+                    for fmt in (entry.get('formats') or []):
+                        ext = fmt.get('ext', '')
+                        fmt_url = fmt.get('url', '')
+                        if fmt_url.startswith('https://') and ext in ('jpg', 'jpeg', 'png', 'webp'):
+                            photo_urls.append(fmt_url)
+                            added = True
+                            break
+
+                # 3. Try direct URL if it looks like an image host
+                if not added:
+                    direct = entry.get('url', '')
+                    if direct.startswith('https://') and any(ext in direct.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
+                        photo_urls.append(direct)
                         added = True
-                    else:
-                        # Try formats
-                        for fmt in (entry.get('formats') or []):
-                            fmt_url = fmt.get('url', '')
-                            if fmt_url and any(ext in fmt_url.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
-                                photo_urls.append(fmt_url)
-                                added = True
-                                break
-                        if not added:
-                            # Try thumbnails
-                            thumbnails = entry.get('thumbnails') or []
-                            if thumbnails:
-                                # Pick highest resolution thumbnail
-                                best = max(thumbnails, key=lambda t: (t.get('width') or 0) * (t.get('height') or 0), default=None)
-                                if best and best.get('url'):
-                                    photo_urls.append(best['url'])
-                                    added = True
-                            # If still not added, skip this entry — avoid appending non-image URLs
+
+                # 4. Fall back to highest-res thumbnail
+                if not added:
+                    thumb = best_thumbnail(entry.get('thumbnails') or [])
+                    if thumb:
+                        photo_urls.append(thumb['url'])
+
+        title = info.get('title', '')
+        uploader = info.get('uploader', '')
 
         return jsonify({
+            'type': 'photo',
             'photos': photo_urls,
+            'images': photo_urls,
             'count': len(photo_urls),
-            'title': info.get('title', '')
+            'title': title,
+            'uploader': uploader,
         })
 
     except Exception as e:
@@ -388,6 +419,47 @@ def photo_proxy():
         if not content_type.startswith('image/'):
             content_type = 'application/octet-stream'
         return Response(r.content, status=200, mimetype=content_type)
+    except Exception:
+        return '', 404
+
+
+@app.route('/download-photo')
+def download_photo():
+    import requests as req_lib
+    target_url = request.args.get('url', '').strip()
+    filename = request.args.get('filename', 'miitok_photo.jpg').strip()
+
+    # Sanitize filename
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    if not filename:
+        filename = 'miitok_photo.jpg'
+
+    if not target_url or not target_url.startswith('https://'):
+        return '', 400
+
+    _parsed_host = urlparse(target_url).netloc.lower().split(':')[0]
+    _ALLOWED_TIKTOK_HOSTS = (
+        'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokv.com', 'tiktok.com',
+        'p16-sign.tiktokcdn-us.com', 'p77-sign.tiktokcdn-us.com',
+    )
+    if not any(_parsed_host == h or _parsed_host.endswith('.' + h) for h in _ALLOWED_TIKTOK_HOSTS):
+        return '', 403
+
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Referer': 'https://www.tiktok.com/',
+        }
+        r = req_lib.get(target_url, headers=headers, timeout=15, stream=True)
+        if r.status_code != 200:
+            return '', 404
+        content_type = r.headers.get('Content-Type', 'image/jpeg')
+        if not content_type.startswith('image/'):
+            content_type = 'image/jpeg'
+
+        response = Response(r.content, status=200, mimetype=content_type)
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
     except Exception:
         return '', 404
 

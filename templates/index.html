@@ -740,7 +740,7 @@
         <button class="q-btn active" onclick="setQuality(this,'best')">BEST</button>
         <button class="q-btn" onclick="setQuality(this,'1080')">1080P</button>
         <button class="q-btn" onclick="setQuality(this,'720')">720P</button>
-        <button class="q-btn" onclick="setQuality(this,'photo')">📷 PHOTO</button>
+        <button class="q-btn" onclick="setQuality(this,'photo')">PHOTO</button>
       </div>
 
       <!-- Input -->
@@ -1113,13 +1113,14 @@
 
     async function downloadPhoto(url, index) {
       try {
-        const res = await fetch('/photo-proxy?url=' + encodeURIComponent(url));
+        const filename = 'miitok_photo_' + index + '.jpg';
+        const res = await fetch('/download-photo?url=' + encodeURIComponent(url) + '&filename=' + encodeURIComponent(filename));
         if (!res.ok) { setStatus('Gagal mengunduh foto ' + index, 'err'); return; }
         const blob    = await res.blob();
         const blobUrl = URL.createObjectURL(blob);
         const a       = document.createElement('a');
         a.href        = blobUrl;
-        a.download    = 'miitok_photo_' + index + '.jpg';
+        a.download    = filename;
         document.body.appendChild(a);
         a.click();
         setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 1000);
