@@ -7,6 +7,7 @@ import glob
 import re
 import time
 import threading
+import subprocess
 from urllib.parse import urlparse
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -199,45 +200,76 @@ def download():
     tmp_id = str(uuid.uuid4())
 
     try:
-        format_map = {
-            'best': 'bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[ext=mp4][vcodec^=avc1]/best[ext=mp4]/best',
-            '1080': 'bestvideo[height<=1080][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4][vcodec^=avc1]/best[height<=1080][ext=mp4]/best[ext=mp4]',
-            '720':  'bestvideo[height<=720][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=720][ext=mp4][vcodec^=avc1]/best[height<=720][ext=mp4]/best[ext=mp4]',
-        }
+        # Check ffmpeg availability
+        ffmpeg_bin = shutil.which('ffmpeg')
+        if not ffmpeg_bin:
+            return jsonify({'error': 'ffmpeg tidak tersedia di server. Hubungi admin.'}), 500
 
-        output_path = f"/tmp/{tmp_id}.mp4"
-
-        _ffmpeg_bin = shutil.which('ffmpeg')
-        ffmpeg_dir = os.path.dirname(_ffmpeg_bin) if _ffmpeg_bin else None
+        # Step 1: Download raw video with yt-dlp
+        raw_outtmpl = f"/tmp/{tmp_id}_raw.%(ext)s"
         ydl_opts = {
-            'outtmpl': output_path,
-            'format': format_map.get(quality, format_map['best']),
-            'merge_output_format': 'mp4',
-            'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],  # NOTE: yt-dlp uses single-r spelling (library's own typo)
-            'postprocessor_args': {'ffmpeg': ['-c:v', 'libx264', '-c:a', 'aac', '-movflags', '+faststart']},
-            'fixup': 'force',
+            'outtmpl': raw_outtmpl,
+            'format': 'best[ext=mp4]/best',
             'quiet': True,
         }
-        if ffmpeg_dir:
-            ydl_opts['ffmpeg_location'] = ffmpeg_dir
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        if not os.path.exists(output_path):
-            candidates = glob.glob(f"/tmp/{tmp_id}.*")
-            output_path = candidates[0] if candidates else None
-
-        if not output_path:
-            for f in glob.glob(f"/tmp/{tmp_id}.*"):
-                try:
-                    os.remove(f)
-                except Exception:
-                    pass
+        # Step 2: Find the downloaded raw file
+        raw_candidates = glob.glob(f"/tmp/{tmp_id}_raw.*")
+        if not raw_candidates:
             return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
+        raw_file = raw_candidates[0]
+
+        # Step 3: Run ffmpeg to convert to a WhatsApp/Android-compatible MP4
+        output_path = f"/tmp/{tmp_id}_out.mp4"
+
+        if quality == '720':
+            ffmpeg_cmd = [
+                ffmpeg_bin, '-y', '-i', raw_file,
+                '-vf', 'scale=-2:720',
+                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '128k',
+                '-movflags', '+faststart',
+                output_path,
+            ]
+        elif quality == '1080':
+            ffmpeg_cmd = [
+                ffmpeg_bin, '-y', '-i', raw_file,
+                '-vf', 'scale=-2:1080',
+                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '128k',
+                '-movflags', '+faststart',
+                output_path,
+            ]
+        else:  # best
+            ffmpeg_cmd = [
+                ffmpeg_bin, '-y', '-i', raw_file,
+                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '128k',
+                '-movflags', '+faststart',
+                output_path,
+            ]
+
+        result = subprocess.run(ffmpeg_cmd, capture_output=True)
+        if result.returncode != 0:
+            # Clean up raw file before returning error
+            try:
+                os.remove(raw_file)
+            except Exception:
+                pass
+            return jsonify({'error': 'Konversi video gagal. Coba lagi.'}), 500
 
         @after_this_request
         def cleanup_video(response):
+            try:
+                os.remove(raw_file)
+            except Exception:
+                pass
             try:
                 os.remove(output_path)
             except Exception:
@@ -257,205 +289,17 @@ def download():
 
 @app.route('/photos', methods=['POST'])
 def photos():
-    if request.is_json:
-        data = request.get_json(silent=True) or {}
-        url = data.get('url', '').strip()
-    else:
-        url = (request.form.get('url') or '').strip()
-
-    if not url:
-        return jsonify({'error': 'URL kosong'}), 400
-
-    if not _is_valid_tiktok_url(url):
-        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
-
-    # Rate limiting
-    # NOTE: X-Forwarded-For is trusted unconditionally here.
-    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
-    # with x_for=1 to restrict header trust to one hop.
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    if not _check_rate_limit(client_ip, _rate_store_photos):
-        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
-
-    try:
-        ydl_opts = {
-            'quiet': True,
-            'skip_download': True,
-            'noplaylist': False,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-
-        if not info:
-            return jsonify({'photos': [], 'images': [], 'count': 0, 'title': '', 'type': 'photo'}), 200
-
-        photo_urls = []
-
-        # Helper: pick best thumbnail from a list
-        def best_thumbnail(thumbnails):
-            if not thumbnails:
-                return None
-            valid = [t for t in thumbnails if t.get('url', '').startswith('https://')]
-            if not valid:
-                return None
-            return max(valid, key=lambda t: (t.get('width') or 0) * (t.get('height') or 0), default=None)
-
-        # Check top-level 'images' key (some yt-dlp versions)
-        # Each item may be a dict with url/width/height for one slide at one resolution
-        # Group by picking highest-res: deduplicate by collecting all dicts, sort by area desc
-        # then add only if the URL hasn't been seen (to avoid adding multiple sizes of same slide)
-        if info.get('images'):
-            imgs_raw = info['images']
-            dicts = [i for i in imgs_raw if isinstance(i, dict) and i.get('url', '').startswith('https://')]
-            strings = [str(i) for i in imgs_raw if not isinstance(i, dict) and str(i).startswith('https://')]
-            if dicts:
-                # NOTE: If TikTok returns multiple resolution variants with distinct CDN URLs,
-                # all will be included here. The playlist-entry branch (below) handles this
-                # correctly per-entry. This path is used only for older yt-dlp that returns
-                # top-level 'images' without per-entry granularity.
-                # Sort by resolution descending
-                dicts_sorted = sorted(dicts, key=lambda i: (i.get('width') or 0) * (i.get('height') or 0), reverse=True)
-                seen_urls = set()
-                for img in dicts_sorted:
-                    u = img.get('url', '')
-                    if u and u not in seen_urls:
-                        photo_urls.append(u)
-                        seen_urls.add(u)
-            else:
-                photo_urls.extend(strings)
-
-        # Check playlist entries (TikTok slideshow)
-        if not photo_urls and info.get('_type') == 'playlist' and info.get('entries'):
-            for entry in (info['entries'] or []):
-                if not entry:
-                    continue
-                added = False
-
-                # 1. Try 'images' key on entry
-                if entry.get('images'):
-                    imgs = entry['images']
-                    # Sort by resolution descending and pick highest-res
-                    dicts = [i for i in imgs if isinstance(i, dict)]
-                    if dicts:
-                        best = sorted(dicts, key=lambda i: (i.get('width') or 0) * (i.get('height') or 0), reverse=True)[0]
-                        u = best.get('url', '')
-                    else:
-                        u = str(imgs[0]) if imgs else ''
-                    if u.startswith('https://'):
-                        photo_urls.append(u)
-                        added = True
-
-                # 2. Try formats - look for image-like extensions
-                if not added:
-                    for fmt in (entry.get('formats') or []):
-                        ext = fmt.get('ext', '')
-                        fmt_url = fmt.get('url', '')
-                        if fmt_url.startswith('https://') and ext in ('jpg', 'jpeg', 'png', 'webp'):
-                            photo_urls.append(fmt_url)
-                            added = True
-                            break
-
-                # 3. Try direct URL if it looks like an image host
-                if not added:
-                    direct = entry.get('url', '')
-                    if direct.startswith('https://') and any(ext in direct.lower() for ext in ['.jpg', '.jpeg', '.webp', '.png']):
-                        photo_urls.append(direct)
-                        added = True
-
-                # 4. Fall back to highest-res thumbnail
-                if not added:
-                    thumb = best_thumbnail(entry.get('thumbnails') or [])
-                    if thumb:
-                        photo_urls.append(thumb['url'])
-
-        if not photo_urls:
-            return jsonify({'error': 'Tidak ada foto ditemukan. Link ini mungkin video, bukan slideshow.'}), 400
-
-        title = info.get('title', '')
-        uploader = info.get('uploader', '')
-        thumbnail = info.get('thumbnail', '')
-
-        return jsonify({
-            'type': 'photo',
-            'photos': photo_urls,
-            'images': photo_urls,
-            'count': len(photo_urls),
-            'title': title,
-            'uploader': uploader,
-            'thumbnail': thumbnail,
-        })
-
-    except Exception as e:
-        return jsonify({'error': 'Gagal mengambil foto, coba lagi'}), 500
+    return jsonify({'error': 'PHOTO mode is temporarily disabled.'}), 503
 
 
 @app.route('/photo-proxy')
 def photo_proxy():
-    import requests as req_lib
-    target_url = request.args.get('url', '').strip()
-    if not target_url or not target_url.startswith('https://'):
-        return '', 400
-    _parsed_host = urlparse(target_url).netloc.lower().split(':')[0]
-    _ALLOWED_TIKTOK_HOSTS = (
-        'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokv.com', 'tiktok.com',
-    )
-    if not any(_parsed_host == h or _parsed_host.endswith('.' + h) for h in _ALLOWED_TIKTOK_HOSTS):
-        return '', 403
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
-            'Referer': 'https://www.tiktok.com/',
-        }
-        r = req_lib.get(target_url, headers=headers, timeout=15, stream=True)
-        if r.status_code != 200:
-            return '', 404
-        content_type = r.headers.get('Content-Type', 'image/jpeg')
-        if not content_type.startswith('image/'):
-            content_type = 'application/octet-stream'
-        return Response(r.content, status=200, mimetype=content_type)
-    except Exception:
-        return '', 404
+    return '', 503
 
 
 @app.route('/download-photo')
 def download_photo():
-    import requests as req_lib
-    target_url = request.args.get('url', '').strip()
-    filename = request.args.get('filename', 'miitok_photo.jpg').strip()
-
-    # Sanitize filename
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
-    if not filename:
-        filename = 'miitok_photo.jpg'
-
-    if not target_url or not target_url.startswith('https://'):
-        return '', 400
-
-    _parsed_host = urlparse(target_url).netloc.lower().split(':')[0]
-    _ALLOWED_TIKTOK_HOSTS = (
-        'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokv.com', 'tiktok.com',
-        'p16-sign.tiktokcdn-us.com', 'p77-sign.tiktokcdn-us.com',
-    )
-    if not any(_parsed_host == h or _parsed_host.endswith('.' + h) for h in _ALLOWED_TIKTOK_HOSTS):
-        return '', 403
-
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
-            'Referer': 'https://www.tiktok.com/',
-        }
-        r = req_lib.get(target_url, headers=headers, timeout=15, stream=True)
-        if r.status_code != 200:
-            return '', 404
-        content_type = r.headers.get('Content-Type', 'image/jpeg')
-        if not content_type.startswith('image/'):
-            content_type = 'image/jpeg'
-
-        response = Response(r.content, status=200, mimetype=content_type)
-        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    except Exception:
-        return '', 404
+    return '', 503
 
 
 if __name__ == '__main__':
