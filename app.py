@@ -200,9 +200,9 @@ def download():
 
     try:
         format_map = {
-            'best': 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[vcodec^=avc]+bestaudio/bestvideo+bestaudio/best',
-            '1080': 'bestvideo[height<=1080][vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
-            '720':  'bestvideo[height<=720][vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best',
+            'best': 'bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[ext=mp4][vcodec^=avc1]/best[ext=mp4]/best',
+            '1080': 'bestvideo[height<=1080][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4][vcodec^=avc1]/best[height<=1080][ext=mp4]/best[ext=mp4]',
+            '720':  'bestvideo[height<=720][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=720][ext=mp4][vcodec^=avc1]/best[height<=720][ext=mp4]/best[ext=mp4]',
         }
 
         output_path = f"/tmp/{tmp_id}.mp4"
@@ -214,7 +214,7 @@ def download():
             'format': format_map.get(quality, format_map['best']),
             'merge_output_format': 'mp4',
             'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],  # NOTE: yt-dlp uses single-r spelling (library's own typo)
-            'postprocessor_args': {'ffmpeg': ['-movflags', '+faststart']},
+            'postprocessor_args': {'ffmpeg': ['-c:v', 'libx264', '-c:a', 'aac', '-movflags', '+faststart']},
             'fixup': 'force',
             'quiet': True,
         }
@@ -244,7 +244,7 @@ def download():
                 pass
             return response
 
-        return send_file(output_path, as_attachment=True, download_name='miitok_video.mp4')
+        return send_file(output_path, as_attachment=True, download_name='miitok_video.mp4', mimetype='video/mp4')
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
