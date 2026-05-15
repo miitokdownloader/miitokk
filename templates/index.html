@@ -396,7 +396,8 @@
 
         async function startDownload() {
             if (isDownloading) return;
-            const url = document.getElementById('urlInput').value.trim();
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
             const status = document.getElementById('status');
             const loading = document.getElementById('loading');
             const btn = document.getElementById('dlBtn');
@@ -420,9 +421,12 @@
 
             try {
                 const fd = new FormData();
-                fd.append('url', url);
+                fd.append('url', urlInput.value.trim());
                 fd.append('quality', selectedQuality);
-                const response = await fetch('/download', { method: 'POST', body: fd });
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    body: fd
+                });
 
                 const contentType = response.headers.get('content-type');
 

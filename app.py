@@ -36,8 +36,16 @@ def index():
 
 @app.route('/download', methods=['POST'])
 def download():
-    url = request.form.get('url')
-    quality = request.form.get('quality')
+    # Support both form-data and JSON body
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        url = data.get('url', '').strip()
+        quality = data.get('quality', '').strip()
+    else:
+        url = (request.form.get('url') or '').strip()
+        quality = (request.form.get('quality') or '').strip()
+
+    print(f"[download] content-type={request.content_type!r} url={url!r} quality={quality!r}", flush=True)
 
     if not url:
         return jsonify({'error': 'Please paste TikTok URL'}), 400
