@@ -577,6 +577,135 @@
 
     .modal-sec-btn.copy:hover { border-color: var(--red); color: var(--red); }
 
+    /* ── PHOTO CAROUSEL ─────────────────────────────── */
+    .photo-carousel {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 12px;
+      padding: 4px 0 12px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(204,0,0,0.4) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .photo-carousel::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .photo-carousel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .photo-carousel::-webkit-scrollbar-thumb {
+      background: rgba(204,0,0,0.4);
+      border-radius: 2px;
+    }
+
+    .photo-card {
+      flex: 0 0 80%;
+      scroll-snap-align: center;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(204,0,0,0.25);
+    }
+
+    .photo-card img {
+      width: 100%;
+      display: block;
+      border-radius: 10px 10px 0 0;
+      max-height: 420px;
+      object-fit: cover;
+    }
+
+    .photo-card-footer {
+      padding: 8px;
+      text-align: center;
+      background: rgba(0,0,0,0.55);
+    }
+
+    .photo-dl-btn {
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      padding: 6px 14px;
+      border-radius: 6px;
+      background: rgba(180,0,0,0.85);
+      border: 1px solid rgba(204,0,0,0.6);
+      color: var(--white);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .photo-dl-btn:hover {
+      background: rgba(204,0,0,0.95);
+      box-shadow: 0 0 12px rgba(204,0,0,0.5);
+    }
+
+    .photo-count {
+      font-size: 0.82rem;
+      letter-spacing: 0.1em;
+      color: rgba(204,0,0,0.8);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(204,0,0,0.45);
+      color: var(--white);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      transition: all 0.2s;
+    }
+
+    .arrow-btn:hover {
+      background: rgba(180,0,0,0.7);
+      border-color: var(--red);
+    }
+
+    #arrowLeft  { left: -14px; }
+    #arrowRight { right: -14px; }
+
+    .download-all-btn {
+      font-family: var(--font-logo);
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      padding: 10px 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(180,0,0,0.9), rgba(100,0,0,0.95));
+      border: 1px solid rgba(204,0,0,0.6);
+      color: var(--white);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 16px rgba(204,0,0,0.3);
+    }
+
+    .download-all-btn:hover {
+      box-shadow: 0 0 28px rgba(204,0,0,0.55);
+      transform: translateY(-1px);
+    }
+
+    @media (min-width: 640px) {
+      .photo-card { flex: 0 0 260px; }
+      .arrow-btn  { display: flex; }
+    }
+
     /* ── DESKTOP TWEAKS ──────────────────────────────── */
     @media (min-width: 768px) {
       .page { padding: 64px 40px 80px; }
@@ -611,7 +740,7 @@
         <button class="q-btn active" onclick="setQuality(this,'best')">BEST</button>
         <button class="q-btn" onclick="setQuality(this,'1080')">1080P</button>
         <button class="q-btn" onclick="setQuality(this,'720')">720P</button>
-        <button class="q-btn" onclick="setQuality(this,'audio')"><span class="music-icon">♪</span>AUDIO</button>
+        <button class="q-btn" onclick="setQuality(this,'photo')">📷 PHOTO</button>
       </div>
 
       <!-- Input -->
@@ -642,7 +771,7 @@
       </div>
 
       <!-- Download button -->
-      <div class="dl-wrap">
+      <div class="dl-wrap" id="dlWrap">
         <svg class="ring-svg" viewBox="0 0 320 60" preserveAspectRatio="none" aria-hidden="true">
           <rect x="2" y="2" width="316" height="56" rx="10" ry="10"
                 fill="none" stroke="#cc0000" stroke-width="1"
@@ -660,6 +789,19 @@
 
       <!-- Status -->
       <div class="status" id="status"></div>
+
+      <!-- Photo carousel section -->
+      <div id="photoSection" style="display:none; margin-top:16px;">
+        <div class="photo-count" id="photoCount"></div>
+        <div style="position:relative; padding: 0 2px;">
+          <button class="arrow-btn" id="arrowLeft" onclick="carouselScroll(-1)">&#8592;</button>
+          <button class="arrow-btn" id="arrowRight" onclick="carouselScroll(1)">&#8594;</button>
+          <div class="photo-carousel" id="photoCarousel"></div>
+        </div>
+        <div style="text-align:center; margin-top:14px;">
+          <button class="download-all-btn" id="downloadAllBtn" onclick="downloadAllPhotos()" style="display:none;">DOWNLOAD ALL</button>
+        </div>
+      </div>
 
     </div><!-- /card -->
 
@@ -698,15 +840,35 @@
     let isDownloading   = false;
     let previewData     = null;
     let previewTimer    = null;
+    let photoUrls       = [];
+    let isPhotoMode     = false;
 
-    const qualityLabel = { best:'BEST', '1080':'1080P', '720':'720P', audio:'MP3 AUDIO' };
-    const typeLabel    = { best:'MP4', '1080':'MP4', '720':'MP4', audio:'MP3' };
+    const qualityLabel = { best:'BEST', '1080':'1080P', '720':'720P', photo:'PHOTO' };
+    const typeLabel    = { best:'MP4', '1080':'MP4', '720':'MP4', photo:'IMAGE' };
 
     /* ── QUALITY ──────────────────────────────────── */
     function setQuality(el, q) {
+      isDownloading = false;
       document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       selectedQuality = q;
+      if (q === 'photo') {
+        isPhotoMode = true;
+        document.getElementById('dlWrap').style.display = 'none';
+        const val = document.getElementById('urlInput').value.trim();
+        if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok'))) {
+          clearTimeout(previewTimer);
+          previewTimer = setTimeout(() => fetchPhotos(val), 300);
+        }
+      } else {
+        isPhotoMode = false;
+        document.getElementById('dlWrap').style.display = '';
+        document.getElementById('photoSection').style.display = 'none';
+        document.getElementById('photoCarousel').innerHTML = '';
+        document.getElementById('photoCount').textContent = '';
+        document.getElementById('downloadAllBtn').style.display = 'none';
+        photoUrls = [];
+      }
     }
 
     /* ── INPUT ────────────────────────────────────── */
@@ -720,7 +882,11 @@
       setStatus('', '');
 
       if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok'))) {
-        previewTimer = setTimeout(() => fetchPreview(val), 900);
+        if (isPhotoMode) {
+          previewTimer = setTimeout(() => fetchPhotos(val), 900);
+        } else {
+          previewTimer = setTimeout(() => fetchPreview(val), 900);
+        }
       }
     }
 
@@ -880,6 +1046,105 @@
         btn.disabled = false;
         document.getElementById('spinnerWrap').classList.remove('show');
       }
+    }
+    /* ── PHOTO MODE ───────────────────────────────── */
+    async function fetchPhotos(url) {
+      if (isDownloading) return;
+      isDownloading = true;
+      document.getElementById('spinnerWrap').classList.add('show');
+      document.getElementById('photoSection').style.display = 'none';
+      setStatus('', '');
+      try {
+        const fd = new FormData();
+        fd.append('url', url);
+        const res = await fetch('/photos', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) {
+          setStatus(data.error, 'err');
+          return;
+        }
+        renderCarousel(data.photos || [], data.count || 0);
+      } catch(e) {
+        setStatus('Terjadi kesalahan saat mengambil foto.', 'err');
+      } finally {
+        isDownloading = false;
+        document.getElementById('spinnerWrap').classList.remove('show');
+      }
+    }
+
+    function renderCarousel(photos, count) {
+      if (!isPhotoMode) return;
+      const carousel  = document.getElementById('photoCarousel');
+      const countEl   = document.getElementById('photoCount');
+      const dlAllBtn  = document.getElementById('downloadAllBtn');
+      const section   = document.getElementById('photoSection');
+      carousel.innerHTML = '';
+      if (!photos || !photos.length) {
+        countEl.textContent  = 'No photos found. This link may be a video.';
+        countEl.style.color  = 'rgba(204,0,0,0.5)';
+        dlAllBtn.style.display = 'none';
+        section.style.display = 'block';
+        return;
+      }
+      photoUrls = photos;
+      countEl.textContent = 'Photos found: ' + count;
+      countEl.style.color = 'rgba(204,0,0,0.8)';
+      photos.forEach(function(url, i) {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        const img = document.createElement('img');
+        img.src     = '/photo-proxy?url=' + encodeURIComponent(url);
+        img.alt     = 'Photo ' + (i + 1);
+        img.loading = 'lazy';
+        const footer = document.createElement('div');
+        footer.className = 'photo-card-footer';
+        const btn = document.createElement('button');
+        btn.className   = 'photo-dl-btn';
+        btn.textContent = 'DOWNLOAD PHOTO';
+        btn.onclick     = (function(u, idx) { return function() { downloadPhoto(u, idx); }; })(url, i + 1);
+        footer.appendChild(btn);
+        card.appendChild(img);
+        card.appendChild(footer);
+        carousel.appendChild(card);
+      });
+      dlAllBtn.style.display = 'inline-block';
+      section.style.display  = 'block';
+    }
+
+    async function downloadPhoto(url, index) {
+      try {
+        const res = await fetch('/photo-proxy?url=' + encodeURIComponent(url));
+        if (!res.ok) { setStatus('Gagal mengunduh foto ' + index, 'err'); return; }
+        const blob    = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a       = document.createElement('a');
+        a.href        = blobUrl;
+        a.download    = 'miitok_photo_' + index + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 1000);
+      } catch(e) {
+        setStatus('Gagal mengunduh foto ' + index, 'err');
+      }
+    }
+
+    async function downloadAllPhotos() {
+      if (!photoUrls.length) return;
+      setStatus('Mengunduh ' + photoUrls.length + ' foto...', 'ok');
+      for (let i = 0; i < photoUrls.length; i++) {
+        await downloadPhoto(photoUrls[i], i + 1);
+        if (i < photoUrls.length - 1) {
+          await new Promise(function(resolve) { setTimeout(resolve, 350); });
+        }
+      }
+      setStatus('Semua foto berhasil diunduh!', 'ok');
+    }
+
+    function carouselScroll(direction) {
+      const carousel = document.getElementById('photoCarousel');
+      const card     = carousel.querySelector('.photo-card');
+      const cardWidth = card ? (card.offsetWidth + 12) : 280;
+      carousel.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
     }
   </script>
 </body>
