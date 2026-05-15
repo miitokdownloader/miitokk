@@ -12,6 +12,7 @@
             font-family: 'Rajdhani', sans-serif;
             min-height: 100vh;
             overflow-y: auto;
+            overflow-x: hidden;
             background: #0a0a0a;
         }
 
@@ -31,12 +32,7 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: linear-gradient(
-                to bottom,
-                rgba(0,0,0,0.40) 0%,
-                rgba(40,0,0,0.25) 50%,
-                rgba(0,0,0,0.50) 100%
-            );
+            background: rgba(0,0,0,0.35);
             z-index: 1;
         }
 
@@ -121,29 +117,19 @@
             color: #ccc;
         }
 
-        /* AUDIO quality button distinct style */
-        .quality-btn--audio {
-            border-color: #ff006688;
-            color: #ff0066aa;
-        }
-
-        .quality-btn--audio.active {
-            background: linear-gradient(135deg, #7a003a, #cc0044);
-            border-color: #ff0066;
-            color: #fff;
-            box-shadow: 0 0 14px #ff006699, 0 0 28px #ff006644;
-        }
-
         /* ===== INPUT ===== */
         .input-row {
             display: flex;
             gap: 12px;
             margin-bottom: 20px;
             align-items: stretch;
+            width: 100%;
         }
 
         .input-box {
             flex: 1;
+            width: 100%;
+            box-sizing: border-box;
             background: rgba(255,255,255,0.05);
             border: 1px solid #cc000055;
             border-radius: 8px;
@@ -189,16 +175,17 @@
             color: #cc0000;
             font-size: 0.78rem;
             letter-spacing: 3px;
-            animation: pulse 1.2s ease-in-out infinite;
+            animation: pulse-text 1.2s ease-in-out infinite;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-text {
             0%, 100% { opacity: 1; }
             50%       { opacity: 0.2; }
         }
 
         /* ===== THUMBNAIL GALLERY ===== */
         .gallery-section {
+            display: none;
             width: 100%;
             max-width: 960px;
             margin-bottom: 28px;
@@ -348,13 +335,18 @@
 
         .dl-all-btn.show { display: block; }
 
-        /* ===== STATUS + FOOTER ===== */
+        /* ===== STATUS ===== */
         .status {
             margin-top: 16px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             letter-spacing: 1px;
             min-height: 22px;
             text-align: center;
+            max-width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .status.success { color: #00cc66; }
@@ -375,46 +367,13 @@
             margin-bottom: 28px;
         }
 
-        .dl-ring-outer {
-            position: relative;
-            display: inline-flex;
+        .dl-main-btn {
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 260px;
+            width: 280px;
             height: 72px;
-            border-radius: 12px;
-        }
-
-        .dl-ring-outer::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 14px;
-            background: conic-gradient(from 0deg, transparent 0%, #cc0000 18%, #ff4444 22%, transparent 40%);
-            animation: ring-spin 1.8s linear infinite;
-            z-index: 0;
-        }
-
-        .dl-ring-outer::after {
-            content: '';
-            position: absolute;
-            inset: 2px;
-            border-radius: 10px;
-            background: #0a0a0a;
-            z-index: 1;
-        }
-
-        @keyframes ring-spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-        }
-
-        .dl-main-btn {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            padding: 18px 60px;
-            border: none;
+            border: 1px solid #cc0000;
             border-radius: 10px;
             background: linear-gradient(135deg, #1a0000 0%, #330000 50%, #1a0000 100%);
             color: #fff;
@@ -423,26 +382,27 @@
             font-weight: 900;
             letter-spacing: 5px;
             cursor: pointer;
-            box-shadow:
-                0 0 18px #cc000066,
-                0 0 40px #cc000033,
-                inset 0 0 20px #cc000022;
+            box-shadow: 0 0 18px #cc000066, 0 0 40px #cc000033, inset 0 0 20px #cc000022;
+            animation: btn-pulse 2.5s ease-in-out infinite;
             transition: transform 0.2s, box-shadow 0.2s;
             white-space: nowrap;
         }
 
+        @keyframes btn-pulse {
+            0%, 100% { box-shadow: 0 0 18px #cc000066, 0 0 40px #cc000033, inset 0 0 20px #cc000022; }
+            50%       { box-shadow: 0 0 28px #cc0000aa, 0 0 60px #cc000055, inset 0 0 30px #cc000044; }
+        }
+
         .dl-main-btn:hover {
             transform: translateY(-3px);
-            box-shadow:
-                0 0 28px #cc0000aa,
-                0 0 60px #cc000055,
-                inset 0 0 30px #cc000044;
+            box-shadow: 0 0 32px #cc0000cc, 0 0 70px #cc000066, inset 0 0 30px #cc000044;
         }
 
         .dl-main-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
             transform: none;
+            animation: none;
         }
 
         /* ===== DESKTOP (768px+) ===== */
@@ -450,16 +410,21 @@
             .page-wrapper { padding: 40px 32px 60px; }
             .logo { font-size: 4rem; }
             .main-panel { max-width: 800px; }
-            .dl-ring-outer { width: 300px; height: 80px; }
-            .dl-main-btn { font-size: 1.1rem; padding: 20px 70px; }
+            .dl-main-btn { width: 320px; height: 80px; font-size: 1.1rem; }
             .gallery-scroll { gap: 16px; }
             .thumb-card { width: 180px; height: 250px; }
         }
 
+        /* ===== MOBILE (<= 600px) ===== */
+        @media (max-width: 600px) {
+            .main-panel { padding: 0 24px; }
+            .dl-main-btn { width: 100%; }
+            .quality-select { flex-wrap: wrap; justify-content: center; }
+        }
+
         /* ===== NARROW SCREENS (<400px) ===== */
         @media (max-width: 400px) {
-            .dl-ring-outer { width: 100%; }
-            .dl-main-btn { width: 100%; padding: 18px 20px; }
+            .dl-main-btn { width: 100%; }
         }
     </style>
 </head>
@@ -481,7 +446,7 @@
                 <button class="quality-btn active" onclick="setQuality(this,'best')">BEST</button>
                 <button class="quality-btn" onclick="setQuality(this,'1080p')">1080P</button>
                 <button class="quality-btn" onclick="setQuality(this,'720p')">720P</button>
-                <button class="quality-btn quality-btn--audio" onclick="setQuality(this,'audio')">&#9834; AUDIO</button>
+                <button class="quality-btn" onclick="setQuality(this,'audio')">&#9834; AUDIO</button>
             </div>
 
             <div class="input-row">
@@ -491,11 +456,7 @@
             </div>
 
             <div class="dl-btn-wrapper">
-              <div class="dl-ring-outer">
-                <button class="dl-main-btn" id="dlBtn" onclick="startDownload()">
-                  <span>&#9660; DOWNLOAD</span>
-                </button>
-              </div>
+                <button class="dl-main-btn" id="dlBtn" onclick="startDownload()">DOWNLOAD</button>
             </div>
 
             <div class="loading" id="loading">
@@ -528,6 +489,16 @@
             selectedQuality = q;
         }
 
+        function formatError(msg) {
+            if (/ffmpeg/i.test(msg)) {
+                return 'MP3 requires FFmpeg on server.';
+            }
+            if (msg.length > 60) {
+                return msg.substring(0, 60) + '...';
+            }
+            return msg;
+        }
+
         async function startDownload() {
             if (isDownloading) return;
             const url = document.getElementById('urlInput').value.trim();
@@ -551,6 +522,7 @@
             photoGrid.classList.remove('show');
             photoGrid.innerHTML = '';
             dlAllBtn.classList.remove('show');
+            document.querySelector('.gallery-section').style.display = 'none';
 
             try {
                 const response = await fetch('/download', {
@@ -586,11 +558,11 @@
                             photoGrid.appendChild(item);
                         });
                         status.className = 'status success';
-                        status.textContent = `✓ ${data.urls.length} FOTO DITEMUKAN`;
+                        status.textContent = '✓ ' + data.urls.length + ' FOTO DITEMUKAN';
                         showGallery(data.urls.map((u, i) => ({url: u, label: 'PHOTO ' + (i + 1)})));
                     } else {
                         status.className = 'status error';
-                        status.textContent = '✗ GAGAL: ' + data.error;
+                        status.textContent = '✗ GAGAL: ' + formatError(data.error || 'Unknown error');
                     }
                 } else if (response.ok) {
                     const blob = await response.blob();
@@ -600,11 +572,10 @@
                     a.click();
                     status.className = 'status success';
                     status.textContent = '✓ DOWNLOAD BERHASIL!';
-                    showDemoGallery();
                 }
             } catch(e) {
                 status.className = 'status error';
-                status.textContent = '✗ ERROR: ' + e.message;
+                status.textContent = '✗ ERROR: ' + formatError(e.message);
             } finally {
                 btn.disabled = false;
                 isDownloading = false;
@@ -615,7 +586,7 @@
         function downloadPhoto(url, num) {
             const a = document.createElement('a');
             a.href = url;
-            a.download = `miitok_photo_${num}.jpg`;
+            a.download = 'miitok_photo_' + num + '.jpg';
             a.target = '_blank';
             a.click();
         }
@@ -626,21 +597,10 @@
             });
         }
 
-        function showDemoGallery() {
-            const scroll = document.getElementById('galleryScroll');
-            scroll.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const card = document.createElement('div');
-                card.className = 'thumb-card demo';
-                card.innerHTML = `<div class="thumb-num">VIDEO ${i}</div><div class="thumb-placeholder">PREVIEW</div>`;
-                scroll.appendChild(card);
-            }
-        }
-
         function showGallery(thumbs) {
+            document.querySelector('.gallery-section').style.display = 'block';
             const scroll = document.getElementById('galleryScroll');
             if (!thumbs || thumbs.length === 0) {
-                showDemoGallery();
                 return;
             }
             scroll.innerHTML = '';
@@ -658,7 +618,7 @@
 
                 const label = document.createElement('div');
                 label.className = 'thumb-label';
-                label.textContent = lbl;  // textContent, not innerHTML
+                label.textContent = lbl;
                 card.appendChild(label);
 
                 card.onclick = () => {
@@ -669,8 +629,6 @@
                 scroll.appendChild(card);
             });
         }
-
-        document.addEventListener('DOMContentLoaded', showDemoGallery);
     </script>
 </body>
 </html>
