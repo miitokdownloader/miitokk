@@ -519,6 +519,7 @@
 
     <script>
         let selectedQuality = 'best';
+        let isDownloading = false;
         let photoUrls = [];
 
         function setQuality(el, q) {
@@ -528,6 +529,7 @@
         }
 
         async function startDownload() {
+            if (isDownloading) return;
             const url = document.getElementById('urlInput').value.trim();
             const status = document.getElementById('status');
             const loading = document.getElementById('loading');
@@ -542,6 +544,7 @@
             }
 
             btn.disabled = true;
+            isDownloading = true;
             loading.classList.add('show');
             status.className = 'status';
             status.textContent = '';
@@ -604,6 +607,7 @@
                 status.textContent = '✗ ERROR: ' + e.message;
             } finally {
                 btn.disabled = false;
+                isDownloading = false;
                 loading.classList.remove('show');
             }
         }

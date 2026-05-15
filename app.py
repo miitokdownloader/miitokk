@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
 import yt_dlp
 import os
 import uuid
@@ -59,8 +59,16 @@ def download():
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
+            audio_path = output_path.replace('.mp4', '.mp3')
+            @after_this_request
+            def cleanup_audio(response):
+                try:
+                    os.remove(audio_path)
+                except OSError:
+                    pass
+                return response
             return send_file(
-                output_path.replace('.mp4', '.mp3'),
+                audio_path,
                 as_attachment=True,
                 download_name='miitok_audio.mp3'
             )
@@ -83,12 +91,21 @@ def download():
                 if info.get('_type') == 'playlist':
                     return jsonify({'error': 'Ini slideshow foto, belum support download foto TikTok'}), 400
                     
+            @after_this_request
+            def cleanup_video(response):
+                try:
+                    os.remove(output_path)
+                except OSError:
+                    pass
+                return response
             return send_file(
                 output_path,
                 as_attachment=True,
                 download_name='miitok_video.mp4'
             )
     
+    except yt_dlp.utils.DownloadError:
+        return jsonify({'error': 'Download gagal. Cek link TikTok atau coba lagi.'}), 500
     except Exception as e:
         err_str = str(e)
         err_msg = err_str[:200] + ('...' if len(err_str) > 200 else '')
