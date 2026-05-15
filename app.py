@@ -61,7 +61,9 @@ def set_security_headers(response):
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self'; "
         "img-src 'self' data: https:; "
         "media-src 'self' blob:;"
     )
@@ -169,7 +171,7 @@ def download():
         return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
 
     # Quality validation
-    valid_qualities = {'best', '1080', '720', 'audio'}
+    valid_qualities = {'best', '1080', '720'}
     if not quality:
         quality = 'best'
     elif quality not in valid_qualities:
@@ -183,109 +185,50 @@ def download():
     tmp_id = str(uuid.uuid4())
 
     try:
-        if quality == 'audio':
-            ffmpeg_path = shutil.which('ffmpeg')
-            ffprobe_path = shutil.which('ffprobe')
-            print(f"[audio] ffmpeg={ffmpeg_path} ffprobe={ffprobe_path}", flush=True)
+        format_map = {
+            'best': 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[vcodec^=avc]+bestaudio/bestvideo+bestaudio/best',
+            '1080': 'bestvideo[height<=1080][vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
+            '720':  'bestvideo[height<=720][vcodec^=avc1]+bestaudio[acodec^=mp4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best',
+        }
 
-            if not ffmpeg_path or not ffprobe_path:
-                return jsonify({'error': 'MP3 conversion requires FFmpeg on the server.'}), 500
+        output_path = f"/tmp/{tmp_id}.mp4"
 
-            audio_base = f"/tmp/{tmp_id}"
+        ffmpeg_dir = os.path.dirname(shutil.which('ffmpeg')) if shutil.which('ffmpeg') else None
+        ydl_opts = {
+            'outtmpl': output_path,
+            'format': format_map.get(quality, format_map['best']),
+            'merge_output_format': 'mp4',
+            'postprocessors': [{'key': 'FFmpegVideoRemuxer', 'preferedformat': 'mp4'}],
+            'postprocessor_args': {'ffmpeg': ['-movflags', '+faststart']},
+            'quiet': True,
+        }
+        if ffmpeg_dir:
+            ydl_opts['ffmpeg_location'] = ffmpeg_dir
 
-            ydl_opts = {
-                'outtmpl': audio_base + '.%(ext)s',
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'ffmpeg_location': os.path.dirname(ffmpeg_path),
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
-            audio_path = audio_base + '.mp3'
-            if not os.path.exists(audio_path):
-                # fallback: find any file with this base name
-                candidates = [f for f in glob.glob(audio_base + '.*') if f.endswith('.mp3')]
-                if not candidates:
-                    candidates = glob.glob(audio_base + '.*')
-                audio_path = candidates[0] if candidates else None
+        if not os.path.exists(output_path):
+            candidates = glob.glob(f"/tmp/{tmp_id}.*")
+            output_path = candidates[0] if candidates else None
 
-            if not audio_path or not os.path.exists(audio_path):
-                for f in glob.glob(audio_base + '.*'):
-                    try:
-                        os.remove(f)
-                    except Exception:
-                        pass
-                return jsonify({'error': 'File audio tidak ditemukan'}), 500
-
-            dl_name = 'miitok_audio.mp3'
-
-            @after_this_request
-            def cleanup_audio(response):
+        if not output_path:
+            for f in glob.glob(f"/tmp/{tmp_id}.*"):
                 try:
-                    os.remove(audio_path)
+                    os.remove(f)
                 except Exception:
                     pass
-                return response
+            return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
 
-            return send_file(audio_path, mimetype='audio/mpeg', as_attachment=True, download_name=dl_name)
+        @after_this_request
+        def cleanup_video(response):
+            try:
+                os.remove(output_path)
+            except Exception:
+                pass
+            return response
 
-        else:
-            format_map = {
-                'best': 'bestvideo+bestaudio/best',
-                '1080': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
-                '720':  'bestvideo[height<=720]+bestaudio/best[height<=720]/best',
-            }
-
-            output_path = f"/tmp/{tmp_id}.mp4"
-
-            # Cek preview dulu (tanpa download)
-            check_opts = {'quiet': True, 'skip_download': True}
-            with yt_dlp.YoutubeDL(check_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-
-            if info.get('_type') == 'playlist':
-                for f in glob.glob(f"/tmp/{tmp_id}.*"):
-                    try:
-                        os.remove(f)
-                    except Exception:
-                        pass
-                return jsonify({'error': 'Ini konten foto/slideshow, tidak bisa didownload sebagai video'}), 400
-
-            ydl_opts = {
-                'outtmpl': output_path,
-                'format': format_map.get(quality, 'best'),
-                'merge_output_format': 'mp4',
-            }
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-            if not os.path.exists(output_path):
-                candidates = glob.glob(f"/tmp/{tmp_id}.*")
-                output_path = candidates[0] if candidates else None
-
-            if not output_path:
-                for f in glob.glob(f"/tmp/{tmp_id}.*"):
-                    try:
-                        os.remove(f)
-                    except Exception:
-                        pass
-                return jsonify({'error': 'File video tidak ditemukan setelah download'}), 500
-
-            @after_this_request
-            def cleanup_video(response):
-                try:
-                    os.remove(output_path)
-                except Exception:
-                    pass
-                return response
-
-            return send_file(output_path, as_attachment=True, download_name='miitok_video.mp4')
+        return send_file(output_path, as_attachment=True, download_name='miitok_video.mp4')
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
@@ -309,6 +252,11 @@ def photos():
 
     if not _is_valid_tiktok_url(url):
         return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     try:
         ydl_opts = {
@@ -336,9 +284,15 @@ def photos():
         # Check top-level 'images' key (some yt-dlp versions)
         if info.get('images'):
             for img in info['images']:
-                u = img.get('url', '') if isinstance(img, dict) else str(img)
-                if u.startswith('https://'):
-                    photo_urls.append(u)
+                if isinstance(img, dict):
+                    # Sort by resolution descending and pick highest-res URL
+                    u = img.get('url', '')
+                    if u.startswith('https://'):
+                        photo_urls.append(u)
+                else:
+                    u = str(img)
+                    if u.startswith('https://'):
+                        photo_urls.append(u)
 
         # Check playlist entries (TikTok slideshow)
         if not photo_urls and info.get('_type') == 'playlist' and info.get('entries'):
@@ -349,12 +303,17 @@ def photos():
 
                 # 1. Try 'images' key on entry
                 if entry.get('images'):
-                    for img in entry['images']:
-                        u = img.get('url', '') if isinstance(img, dict) else str(img)
-                        if u.startswith('https://'):
-                            photo_urls.append(u)
-                            added = True
-                            break
+                    imgs = entry['images']
+                    # Sort by resolution descending and pick highest-res
+                    dicts = [i for i in imgs if isinstance(i, dict)]
+                    if dicts:
+                        best = sorted(dicts, key=lambda i: (i.get('width') or 0) * (i.get('height') or 0), reverse=True)[0]
+                        u = best.get('url', '')
+                    else:
+                        u = str(imgs[0]) if imgs else ''
+                    if u.startswith('https://'):
+                        photo_urls.append(u)
+                        added = True
 
                 # 2. Try formats - look for image-like extensions
                 if not added:
@@ -378,6 +337,9 @@ def photos():
                     thumb = best_thumbnail(entry.get('thumbnails') or [])
                     if thumb:
                         photo_urls.append(thumb['url'])
+
+        if not photo_urls:
+            return jsonify({'error': 'Tidak ada foto ditemukan. Link ini mungkin video, bukan slideshow.'}), 400
 
         title = info.get('title', '')
         uploader = info.get('uploader', '')
