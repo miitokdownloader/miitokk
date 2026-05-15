@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
 import yt_dlp
 import os
 import uuid
+import shutil
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -46,6 +47,8 @@ def download():
         output_path = f"/tmp/{filename}"
         
         if quality == 'audio':
+            if shutil.which('ffmpeg') is None:
+                return jsonify({'error': 'MP3 conversion requires FFmpeg installed on the server.'}), 400
             ydl_opts = {
                 'outtmpl': output_path.replace('.mp4', '.mp3'),
                 'format': 'bestaudio/best',
@@ -56,8 +59,16 @@ def download():
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
+            audio_path = output_path.replace('.mp4', '.mp3')
+            @after_this_request
+            def cleanup_audio(response):
+                try:
+                    os.remove(audio_path)
+                except OSError:
+                    pass
+                return response
             return send_file(
-                output_path.replace('.mp4', '.mp3'),
+                audio_path,
                 as_attachment=True,
                 download_name='miitok_audio.mp3'
             )
@@ -66,7 +77,6 @@ def download():
                 'best': 'bestvideo+bestaudio/best',
                 '1080p': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
                 '720p': 'bestvideo[height<=720]+bestaudio/best[height<=720]',
-                '480p': 'bestvideo[height<=480]+bestaudio/best[height<=480]',
             }
             ydl_opts = {
                 'outtmpl': output_path,
@@ -76,19 +86,31 @@ def download():
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                
-                # Cek kalau foto/slideshow
-                if info.get('_type') == 'playlist':
-                    return jsonify({'error': 'Ini slideshow foto, belum support download foto TikTok'}), 400
-                    
+
+            @after_this_request
+            def cleanup_video(response):
+                try:
+                    os.remove(output_path)
+                except OSError:
+                    pass
+                return response
+
+            # Cek kalau foto/slideshow
+            if info.get('_type') == 'playlist':
+                return jsonify({'error': 'Ini slideshow foto, belum support download foto TikTok'}), 400
+
             return send_file(
                 output_path,
                 as_attachment=True,
                 download_name='miitok_video.mp4'
             )
     
+    except yt_dlp.utils.DownloadError:
+        return jsonify({'error': 'Download gagal. Cek link TikTok atau coba lagi.'}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        err_str = str(e)
+        err_msg = err_str[:200] + ('...' if len(err_str) > 200 else '')
+        return jsonify({'error': err_msg}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
