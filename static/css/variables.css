@@ -1,0 +1,41 @@
+:root {
+  /* Colors */
+  --red: #cc0000;
+  --red-deep: #880000;
+  --red-dark: #550000;
+  --red-glow: rgba(204,0,0,0.45);
+  --red-soft: rgba(204,0,0,0.18);
+  --red-neon: rgba(255,30,30,0.9);
+  --white: #f5ede0;
+  --white-dim: rgba(245,237,224,0.7);
+  --black: #0a0806;
+  --glass: rgba(6,2,2,0.75);
+  --glass-border: rgba(204,0,0,0.35);
+  --overlay: rgba(0,0,0,0.45);
+
+  /* Fonts */
+  --font-logo: 'Anton', 'Bebas Neue', sans-serif;
+  --font-heading: 'Bebas Neue', 'Anton', sans-serif;
+  --font-ui: 'Rajdhani', 'Oswald', sans-serif;
+  --font-body: 'Poppins', sans-serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 0.2s;
+  --duration-normal: 0.3s;
+
+  /* Borders */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}

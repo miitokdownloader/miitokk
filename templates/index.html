@@ -6,14 +6,20 @@
   <title>MiiTok — TikTok Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/static/video/makima.mp4" as="video" type="video/mp4" media="(min-width: 641px)">
+  <link rel="stylesheet" href="/static/css/variables.css">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
 </head>
 <body>
 
   <!-- Background Video -->
   <video class="bg-video" autoplay loop muted playsinline preload="none">
-    <source src="/static/makima.mp4" type="video/mp4">
+    <source src="/static/video/makima.mp4" type="video/mp4">
   </video>
   <div class="bg-overlay"></div>
   <div class="bg-vignette"></div>
@@ -21,7 +27,7 @@
   <!-- Top Navbar -->
   <nav class="top-nav">
     <div class="nav-left">
-      <img class="nav-logo-img" src="/static/owner.png" alt="MIITOK logo" />
+      <img class="nav-logo-img" src="/static/img/owner.png" alt="MIITOK logo" />
       <span class="nav-brand">MII NETWORK</span>
     </div>
     <div class="nav-right">
@@ -223,6 +229,11 @@
   </div>
 
   
+  <script src="/static/js/config.js"></script>
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/downloader.js"></script>
+  <script src="/static/js/photo.js"></script>
+  <script src="/static/js/effects.js"></script>
   <script src="/static/js/main.js"></script>
 </body>
 </html>
