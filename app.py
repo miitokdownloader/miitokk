@@ -11,6 +11,14 @@ import subprocess
 import requests
 from urllib.parse import urlparse
 
+from app_validators import (
+    TIKTOK_IMAGE_CDN_SUFFIXES as _TIKTOK_IMAGE_CDN_SUFFIXES,
+    PHOTO_FILENAME_RE as _PHOTO_FILENAME_RE,
+    ALLOWED_PHOTO_EXTS as _ALLOWED_PHOTO_EXTS,
+    is_valid_tiktok_image_url as _is_valid_tiktok_image_url,
+    is_valid_photo_filename as _is_valid_photo_filename,
+)
+
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # ---------------------------------------------------------------------------
@@ -65,48 +73,12 @@ def _client_ip(req):
             .split(',')[0].strip())
 
 
-# TikTok image-CDN allowlist used by /photo-proxy and /download-photo. Only
-# hosts that match one of these suffixes (case-insensitive) are allowed to be
-# proxied/streamed back to the client. This keeps the proxy from being abused
-# as a generic open relay while still covering TikTok's many image CDNs.
-_TIKTOK_IMAGE_CDN_SUFFIXES = (
-    '.tiktokcdn.com',
-    '.tiktokcdn-us.com',
-    '.tiktokv.com',
-    '.byteoversea.com',
-    '.bytecdn.cn',
-    '.muscdn.com',
-    '.musical.ly',
-    '.ibyteimg.com',
-    '.ipstatp.com',
-)
-
-_PHOTO_FILENAME_RE = re.compile(r'^[A-Za-z0-9._-]{1,64}$')
-_ALLOWED_PHOTO_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
-
-
-def _is_valid_tiktok_image_url(url):
-    """Return True if url is http(s) and host ends in a known TikTok image CDN suffix.
-
-    Uses parsed.hostname (which excludes any user:pass@ userinfo) instead of
-    parsed.netloc to defeat SSRF tricks like
-    'http://aaa.tiktokcdn.com:80@evil.com/x.jpg'. Also explicitly rejects URLs
-    that carry userinfo, fragments, or empty hosts as a defense in depth.
-    """
-    try:
-        parsed = urlparse(url)
-        if parsed.scheme not in ('http', 'https'):
-            return False
-        # Refuse any URL that smuggles userinfo - http(s) basic-auth has no
-        # legitimate use against a public CDN and is a classic SSRF carrier.
-        if parsed.username or parsed.password:
-            return False
-        host = (parsed.hostname or '').lower()
-        if not host:
-            return False
-        return any(host.endswith(suffix) for suffix in _TIKTOK_IMAGE_CDN_SUFFIXES)
-    except Exception:
-        return False
+# TikTok image-CDN allowlist used by /photo-proxy and /download-photo. The
+# allowlist itself, the photo-filename regex, and the helper that validates
+# image URLs all live in app_validators.py so they can be unit-tested without
+# importing Flask. They are imported above and re-bound here under their
+# original module-level names so the rest of this file (and any code that
+# previously imported them from app.py) keeps working unchanged.
 
 
 # ---------------------------------------------------------------------------
@@ -462,6 +434,13 @@ def photo_proxy():
                 pass
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
         if upstream.status_code != 200:
+            # stream=True keeps the underlying TCP connection open until the
+            # response object is closed or GC'd. Close explicitly on the
+            # error path to avoid a slow file-descriptor leak under load.
+            try:
+                upstream.close()
+            except Exception:
+                pass
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
 
         mimetype = upstream.headers.get('Content-Type', 'image/jpeg').split(';', 1)[0].strip() or 'image/jpeg'
@@ -496,9 +475,7 @@ def download_photo():
     # with 400 instead of falling back to a constant default, because a
     # constant default would collide across photos in the bulk-download
     # flow (every download would overwrite 'miitok_photo.jpg').
-    if (not filename
-            or not _PHOTO_FILENAME_RE.match(filename)
-            or not filename.lower().endswith(_ALLOWED_PHOTO_EXTS)):
+    if not _is_valid_photo_filename(filename):
         return jsonify({'error': 'Invalid filename'}), 400
     safe_name = filename
 
@@ -522,6 +499,12 @@ def download_photo():
                 pass
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
         if upstream.status_code != 200:
+            # See /photo-proxy: explicit close to release the streaming
+            # connection on the error path.
+            try:
+                upstream.close()
+            except Exception:
+                pass
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
 
         mimetype = upstream.headers.get('Content-Type', 'image/jpeg').split(';', 1)[0].strip() or 'image/jpeg'

@@ -31,7 +31,7 @@
         if (typeof window.setStatus === 'function') window.setStatus(data.error, 'err');
         return;
       }
-      renderCarousel(data.photos || [], data.count || 0);
+      renderCarousel(data.photos || []);
 
       if (data.title || data.uploader || data.thumbnail) {
         var preview = {
@@ -61,7 +61,7 @@
     }
   }
 
-  function renderCarousel(photos, count) {
+  function renderCarousel(photos) {
     if (!MII.state.isPhotoMode) return;
     var carousel = $('photoCarousel');
     var countEl  = $('photoCount');
