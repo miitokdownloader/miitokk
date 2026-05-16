@@ -18,7 +18,9 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 _rate_lock = threading.Lock()
 _rate_store_download = {}  # {ip: last_request_timestamp} for /download
 _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
+_rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
 RATE_LIMIT_SECONDS = 10
+RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
 
 
 def _check_rate_limit(ip, store):
@@ -32,10 +34,50 @@ def _check_rate_limit(ip, store):
         return True
 
 
+def _check_proxy_rate_limit(ip):
+    """Lightweight rate limit for proxy endpoints - 1 req/sec."""
+    now = time.time()
+    with _rate_lock:
+        last = _rate_store_proxy.get(ip)
+        if last is not None and (now - last) < RATE_LIMIT_PROXY_SECONDS:
+            return False
+        _rate_store_proxy[ip] = now
+        return True
+
+
 # ---------------------------------------------------------------------------
 # URL validation
 # ---------------------------------------------------------------------------
 TIKTOK_DOMAINS = {'tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com', 'www.tiktok.com'}
+
+# Allowed CDN domains for photo proxy (to prevent SSRF)
+ALLOWED_CDN_SUFFIXES = (
+    '.tiktokcdn.com',
+    '.tiktokcdn-us.com',
+    '.musical.ly',
+    '.muscdn.com',
+    '.tiktok.com',
+    '.ibytedtos.com',
+    '.ipstatp.com',
+)
+
+
+def _is_allowed_cdn_url(url):
+    """Check that a URL is HTTPS and points to an allowed TikTok CDN domain."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme != 'https':
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        hostname = hostname.lower()
+        for suffix in ALLOWED_CDN_SUFFIXES:
+            if hostname == suffix.lstrip('.') or hostname.endswith(suffix):
+                return True
+        return False
+    except Exception:
+        return False
 
 
 def _is_valid_tiktok_url(url):
@@ -373,9 +415,16 @@ def photo_proxy():
     if not url:
         return jsonify({'error': 'URL parameter required'}), 400
 
-    # Only allow https URLs
-    if not url.startswith('https://'):
+    # Validate URL against CDN allowlist (SSRF protection)
+    if not _is_allowed_cdn_url(url):
         return jsonify({'error': 'Invalid URL'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Too many requests'}), 429
+
+    MAX_PROXY_BYTES = 20 * 1024 * 1024  # 20 MB
 
     try:
         headers = {
@@ -383,7 +432,7 @@ def photo_proxy():
             'Referer': 'https://www.tiktok.com/',
             'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
         }
-        resp = req_lib.get(url, headers=headers, timeout=15, stream=True)
+        resp = req_lib.get(url, headers=headers, timeout=15, stream=True, allow_redirects=False)
 
         if resp.status_code != 200:
             return '', 502
@@ -394,7 +443,11 @@ def photo_proxy():
             content_type = 'image/jpeg'
 
         def generate():
+            bytes_sent = 0
             for chunk in resp.iter_content(chunk_size=8192):
+                bytes_sent += len(chunk)
+                if bytes_sent > MAX_PROXY_BYTES:
+                    break
                 yield chunk
 
         return Response(
@@ -419,13 +472,21 @@ def download_photo():
     if not url:
         return jsonify({'error': 'URL parameter required'}), 400
 
-    if not url.startswith('https://'):
+    # Validate URL against CDN allowlist (SSRF protection)
+    if not _is_allowed_cdn_url(url):
         return jsonify({'error': 'Invalid URL'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_proxy_rate_limit(client_ip):
+        return jsonify({'error': 'Too many requests'}), 429
 
     # Sanitize filename
     filename = re.sub(r'[^\w\-_.]', '_', filename)
     if not filename.endswith(('.jpg', '.jpeg', '.png', '.webp')):
         filename += '.jpg'
+
+    MAX_PROXY_BYTES = 20 * 1024 * 1024  # 20 MB
 
     try:
         headers = {
@@ -433,7 +494,7 @@ def download_photo():
             'Referer': 'https://www.tiktok.com/',
             'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
         }
-        resp = req_lib.get(url, headers=headers, timeout=15, stream=True)
+        resp = req_lib.get(url, headers=headers, timeout=15, stream=True, allow_redirects=False)
 
         if resp.status_code != 200:
             return jsonify({'error': 'Gagal mengunduh foto'}), 502
@@ -443,7 +504,11 @@ def download_photo():
             content_type = 'image/jpeg'
 
         def generate():
+            bytes_sent = 0
             for chunk in resp.iter_content(chunk_size=8192):
+                bytes_sent += len(chunk)
+                if bytes_sent > MAX_PROXY_BYTES:
+                    break
                 yield chunk
 
         return Response(

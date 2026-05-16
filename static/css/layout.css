@@ -174,7 +174,7 @@
   animation: slideDown 0.2s var(--ease-out);
 }
 
-.nav-menu.show {
+.nav-menu.open {
   display: block;
 }
 
