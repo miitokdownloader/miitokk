@@ -83,8 +83,20 @@
     }
 
     MII.state.photoUrls = photos.slice();
-    countEl.textContent = 'Photos found: ' + count;
+    var visibleCount = photos.length;
+    countEl.textContent = 'Photos found: ' + visibleCount;
     countEl.style.color = 'rgba(204,0,0,0.8)';
+
+    function updatePhotoCount() {
+      // Recompute from visible cards so the count never overstates what the
+      // user can actually see (img.onerror hides cards in place).
+      var stillVisible = 0;
+      var nodes = carousel.querySelectorAll('.photo-card');
+      for (var n = 0; n < nodes.length; n++) {
+        if (nodes[n].style.display !== 'none') stillVisible++;
+      }
+      countEl.textContent = 'Photos found: ' + stillVisible;
+    }
 
     photos.forEach(function (url, i) {
       var card = document.createElement('div');
@@ -95,7 +107,10 @@
       img.alt     = 'Photo ' + (i + 1);
       img.loading = 'lazy';
       img.onerror = (function (cardEl) {
-        return function () { cardEl.style.display = 'none'; };
+        return function () {
+          cardEl.style.display = 'none';
+          updatePhotoCount();
+        };
       })(card);
 
       var footer = document.createElement('div');

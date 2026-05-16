@@ -15,12 +15,10 @@
 }
 
 .bg-image {
-  /* Fallback CSS background in case the <img> fails to load */
-  background-image: url('/static/background.webp');
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  /* Mobile-first: image visible by default, video swap happens at >=768px */
+  /* Mobile-first: image visible by default, video swap happens at >=768px.
+     The actual fallback paint is the body gradient applied at <=767px in
+     responsive.css; the <img> renders /static/background.webp via its src
+     attribute and is hidden by its inline onerror handler when that 404s. */
   display: block;
 }
 
@@ -205,14 +203,6 @@
   max-width: var(--max-card);
 }
 
-/* Mobile-only background swap (paired with the >=768px swap in
-   responsive.css). The fallback body color makes the page look
-   correct even when /static/background.webp 404s. */
-@media (max-width: 767px) {
-  .bg-video { display: none; }
-  .bg-image { display: block; }
-  body {
-    background-color: #0a0000;
-    background-image: linear-gradient(160deg, #1a0000 0%, #0a0000 60%, #140000 100%);
-  }
-}
+/* Note: the @media (max-width: 767px) bg-image swap and body fallback
+   gradient live exclusively in responsive.css; do not re-declare them
+   here or the two copies will drift. */

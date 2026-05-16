@@ -52,6 +52,19 @@ def _is_valid_tiktok_url(url):
         return False
 
 
+# ---------------------------------------------------------------------------
+# Client IP helper
+# ---------------------------------------------------------------------------
+# NOTE: X-Forwarded-For is trusted unconditionally here.
+# If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
+# with x_for=1 to restrict header trust to one hop. This single helper is the
+# canonical way to derive the per-IP rate-limit key, so the trust boundary is
+# documented and enforced in exactly one place rather than copy-pasted.
+def _client_ip(req):
+    return (req.headers.get('X-Forwarded-For', req.remote_addr or '')
+            .split(',')[0].strip())
+
+
 # TikTok image-CDN allowlist used by /photo-proxy and /download-photo. Only
 # hosts that match one of these suffixes (case-insensitive) are allowed to be
 # proxied/streamed back to the client. This keeps the proxy from being abused
@@ -73,12 +86,22 @@ _ALLOWED_PHOTO_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
 
 
 def _is_valid_tiktok_image_url(url):
-    """Return True if url is http(s) and host ends in a known TikTok image CDN suffix."""
+    """Return True if url is http(s) and host ends in a known TikTok image CDN suffix.
+
+    Uses parsed.hostname (which excludes any user:pass@ userinfo) instead of
+    parsed.netloc to defeat SSRF tricks like
+    'http://aaa.tiktokcdn.com:80@evil.com/x.jpg'. Also explicitly rejects URLs
+    that carry userinfo, fragments, or empty hosts as a defense in depth.
+    """
     try:
         parsed = urlparse(url)
         if parsed.scheme not in ('http', 'https'):
             return False
-        host = (parsed.netloc or '').lower().split(':')[0]
+        # Refuse any URL that smuggles userinfo - http(s) basic-auth has no
+        # legitimate use against a public CDN and is a classic SSRF carrier.
+        if parsed.username or parsed.password:
+            return False
+        host = (parsed.hostname or '').lower()
         if not host:
             return False
         return any(host.endswith(suffix) for suffix in _TIKTOK_IMAGE_CDN_SUFFIXES)
@@ -230,11 +253,9 @@ def download():
     except Exception:
         pass  # If probe fails, let the download attempt proceed and surface its own error
 
-    # Rate limiting
-    # NOTE: X-Forwarded-For is trusted unconditionally here.
-    # If deployed without a trusted reverse proxy, use Flask's ProxyFix middleware
-    # with x_for=1 to restrict header trust to one hop.
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    # Rate limiting (uses the shared _client_ip helper which carries the
+    # X-Forwarded-For trust caveat).
+    client_ip = _client_ip(request)
     if not _check_rate_limit(client_ip, _rate_store_download):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
@@ -342,8 +363,10 @@ def photos():
     if not _is_valid_tiktok_url(url):
         return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
 
-    # Rate limiting (per-IP, separate store from /download)
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    # Rate limiting (per-IP, separate store from /download). Uses the same
+    # _client_ip helper so the X-Forwarded-For trust caveat documented there
+    # applies here too.
+    client_ip = _client_ip(request)
     if not _check_rate_limit(client_ip, _rate_store_photos):
         return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
@@ -417,15 +440,27 @@ def photo_proxy():
         return jsonify({'error': 'Invalid host'}), 400
 
     try:
+        # allow_redirects=False: a 3xx Location pointing at an internal
+        # address (RFC1918, 169.254.169.254 cloud metadata, etc.) would
+        # bypass the host allowlist if we let requests follow it, so refuse
+        # 3xx outright. The legitimate TikTok image-CDN URLs we care about
+        # respond 200 directly.
         upstream = requests.get(
             url,
             stream=True,
             timeout=15,
+            allow_redirects=False,
             headers={
                 'User-Agent': 'Mozilla/5.0',
                 'Referer': 'https://www.tiktok.com/',
             },
         )
+        if 300 <= upstream.status_code < 400:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+            return jsonify({'error': 'Gagal mengambil gambar'}), 502
         if upstream.status_code != 200:
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
 
@@ -456,22 +491,36 @@ def download_photo():
     if not url or not _is_valid_tiktok_image_url(url):
         return jsonify({'error': 'Invalid host'}), 400
 
-    # Sanitize filename: must match strict pattern AND end in an allowed image
-    # extension. Anything else falls back to a safe default.
+    # Strict filename validation: must be present, match the safe pattern AND
+    # carry an allowed image extension. We refuse missing/invalid filenames
+    # with 400 instead of falling back to a constant default, because a
+    # constant default would collide across photos in the bulk-download
+    # flow (every download would overwrite 'miitok_photo.jpg').
+    if (not filename
+            or not _PHOTO_FILENAME_RE.match(filename)
+            or not filename.lower().endswith(_ALLOWED_PHOTO_EXTS)):
+        return jsonify({'error': 'Invalid filename'}), 400
     safe_name = filename
-    if not safe_name or not _PHOTO_FILENAME_RE.match(safe_name) or not safe_name.lower().endswith(_ALLOWED_PHOTO_EXTS):
-        safe_name = 'miitok_photo.jpg'
 
     try:
+        # Same redirect-defense as /photo-proxy: a 3xx response could
+        # smuggle the request to an internal host outside the allowlist.
         upstream = requests.get(
             url,
             stream=True,
             timeout=15,
+            allow_redirects=False,
             headers={
                 'User-Agent': 'Mozilla/5.0',
                 'Referer': 'https://www.tiktok.com/',
             },
         )
+        if 300 <= upstream.status_code < 400:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+            return jsonify({'error': 'Gagal mengambil gambar'}), 502
         if upstream.status_code != 200:
             return jsonify({'error': 'Gagal mengambil gambar'}), 502
 

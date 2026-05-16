@@ -1,6 +1,6 @@
 /* ── RESPONSIVE ──────────────────────────────────── */
-/* Mobile-first cascade: 768 / 1024 / 1440. The mobile-only block lives
-   at the top and is re-asserted in layout.css for the bg-image swap. */
+/* Mobile-first cascade: 768 / 1024 / 1440. The mobile-only block is the
+   single home of the bg-image swap and the body fallback gradient. */
 
 /* Mobile-only background ────────────────────────── */
 @media (max-width: 767px) {
