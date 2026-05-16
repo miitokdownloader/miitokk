@@ -1,0 +1,56 @@
+/* ── RESET ───────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--black);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND VIDEO ────────────────────────────── */
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bg-vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(120,0,0,0.35) 80%, rgba(80,0,0,0.55) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── ANTI TEXT SELECTION ─────────────────────────── */
+body {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Restore full interaction on the URL input */
+.url-input {
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  user-select: text;
+}
+
+/* ── NO HORIZONTAL OVERFLOW ──────────────────────── */
+body { overflow-x: hidden; }

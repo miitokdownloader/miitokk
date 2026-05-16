@@ -77,7 +77,7 @@ def set_security_headers(response):
 # ---------------------------------------------------------------------------
 @app.route('/static/makima.mp4')
 def serve_video():
-    video_path = os.path.join(app.static_folder, 'makima.mp4')
+    video_path = os.path.join(app.static_folder, 'video', 'makima.mp4')
     if not os.path.exists(video_path):
         return '', 404
     file_size = os.path.getsize(video_path)

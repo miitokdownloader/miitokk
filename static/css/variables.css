@@ -1,0 +1,17 @@
+/* ── VARIABLES ───────────────────────────────────── */
+:root {
+  --red:        #cc0000;
+  --red-deep:   #880000;
+  --red-dark:   #550000;
+  --red-glow:   rgba(204,0,0,0.45);
+  --red-soft:   rgba(204,0,0,0.18);
+  --white:      #f5ede0;
+  --white-dim:  rgba(245,237,224,0.7);
+  --black:      #0a0806;
+  --glass:      rgba(6,2,2,0.72);
+  --glass-border: rgba(204,0,0,0.35);
+  --overlay:    rgba(0,0,0,0.45);
+  --font-logo:  'Anton', 'Bebas Neue', sans-serif;
+  --font-ui:    'Oswald', sans-serif;
+  --font-body:  'Poppins', sans-serif;
+}
