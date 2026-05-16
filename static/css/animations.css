@@ -1,0 +1,77 @@
+/* ── ANIMATIONS ──────────────────────────────────── */
+/* All keyframes isolated here. The prefers-reduced-motion block at the
+   bottom disables them on devices that hint reduced motion. */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeScale {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Softer btnBorderGlow (was up to 0 0 48px / opacity 1.0). The active
+   state already carries the full red border + tinted background, so
+   the glow sits at a calmer baseline. */
+@keyframes btnBorderGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(204, 0, 0, 0.45),
+      inset 0 0 10px rgba(204, 0, 0, 0.10);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(204, 0, 0, 0.7),
+      inset 0 0 14px rgba(204, 0, 0, 0.18);
+  }
+}
+
+@keyframes dlBtnShine {
+  0%        { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+/* Reduced motion: kill animations + transitions for users who hint
+   reduced motion (also covers many low-end devices). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .q-btn.active,
+  .dl-btn::after,
+  .spinner,
+  .spinner-label,
+  .preview-card,
+  .modal,
+  .nav-menu.open {
+    animation: none !important;
+    transition: none !important;
+  }
+}
