@@ -1,2 +1,2 @@
 /* ── EFFECTS ──────────────────────────────────── */
-/* Placeholder for future visual effects */
+/* Minimal - no heavy JS animations for performance */

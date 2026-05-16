@@ -1,35 +1,35 @@
-/* ── KEYFRAMES ────────────────────────────────────── */
+/* ── KEYFRAME ANIMATIONS ──────────────────────── */
 
-@keyframes btnBorderGlow {
-  0%,100% { box-shadow: 0 0 16px rgba(204,0,0,0.6), 0 0 32px rgba(204,0,0,0.3), inset 0 0 16px rgba(204,0,0,0.1); }
-  50%      { box-shadow: 0 0 24px rgba(204,0,0,1),   0 0 48px rgba(204,0,0,0.5), inset 0 0 24px rgba(204,0,0,0.2); }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 @keyframes dlBtnShine {
-  0%        { transform: translateX(-100%); }
+  0% { transform: translateX(-100%); }
   60%, 100% { transform: translateX(100%); }
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
-
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes fadeScale {
   from { transform: scale(0.95); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-16px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

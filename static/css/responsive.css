@@ -1,73 +1,102 @@
-/* ── RESPONSIVE ───────────────────────────────────── */
+/* ── MOBILE FIRST (default styles are for mobile) ─── */
 
-@media (min-width: 480px) {
-  .sub-line { width: 80px; }
-  .social-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .features-grid { grid-template-columns: repeat(4, 1fr); }
+/* Small phones override */
+@media (max-width: 380px) {
+  .hero-title { font-size: 2.2rem; }
+  .card { padding: 18px 14px 22px; }
+  .q-btn { padding: 7px 12px; font-size: 0.75rem; min-width: 60px; }
+  .nav-brand { font-size: 1.2rem; }
 }
 
-@media (min-width: 640px) {
-  .modal-backdrop.show { align-items: center; }
-  .modal {
-    border: 1px solid rgba(204,0,0,0.4);
-    border-radius: 16px;
-    animation: fadeScale 0.25s ease;
+/* ── Tablet and up ─── */
+@media (min-width: 768px) {
+  .page {
+    padding-top: 128px;
+    padding-left: 32px;
+    padding-right: 32px;
   }
+  .header { max-width: 800px; margin-bottom: 44px; }
+  .hero-title { font-size: 5rem; letter-spacing: 0.14em; }
+  .hero-sub { font-size: 0.9rem; letter-spacing: 0.55em; gap: 16px; }
+  .sub-line { width: 60px; }
+  .cyber-line-hero { width: 240px; }
+  .card {
+    padding: 36px 44px 44px;
+    max-width: 680px;
+  }
+  .q-btn { padding: 10px 26px; font-size: 0.85rem; }
+  .quality-row { gap: 12px; margin-bottom: 24px; }
+  .url-input { padding: 16px 52px; font-size: 1rem; }
+  .dl-btn { padding: 17px 28px; font-size: 1.1rem; }
+  .features-section { max-width: 680px; }
+  .features-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .feature-card { padding: 20px 16px; }
+  .feature-icon svg { width: 30px; height: 30px; }
+  .social-section { max-width: 680px; }
+  .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .social-btn { padding: 16px 22px; font-size: 0.92rem; }
+  .social-btn svg { width: 28px; height: 28px; }
+  .footer-wrap { max-width: 680px; }
+  .section-divider-line { max-width: 680px; }
+  .modal-backdrop.show { align-items: center; }
+  .modal { border-radius: 16px; border: 1px solid rgba(204,0,0,0.4); animation: fadeScale 0.25s ease; }
   .modal-handle { display: none; }
   .photo-card { flex: 0 0 260px; }
-  .arrow-btn  { display: flex; }
+  .arrow-btn { display: flex; }
 }
 
-/* ── DESKTOP TWEAKS ──────────────────────────────── */
-@media (min-width: 768px) {
-  .card {
-    padding: 40px 48px 48px;
-    width: 100%;
-    max-width: 760px;
-  }
-  .social-section,
-  .features-section,
-  .footer-wrap,
-  .section-divider-line {
-    max-width: 760px;
-  }
-  .features-grid { grid-template-columns: repeat(4, 1fr); }
-  .page {
-    padding-top: 128px; /* 64px navbar + 64px */
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-}
-
+/* ── Desktop ─── */
 @media (min-width: 1024px) {
-  .card {
-    max-width: 900px;
-  }
-  .social-section,
-  .features-section,
-  .footer-wrap,
-  .section-divider-line {
-    max-width: 900px;
-  }
-  .social-grid { grid-template-columns: repeat(4, 1fr); }
+  .page { padding-top: 140px; }
+  .header { max-width: 1000px; }
+  .hero-title { font-size: 5.5rem; letter-spacing: 0.15em; }
+  .hero-sub { font-size: 0.95rem; }
+  .sub-line { width: 80px; }
+  .card { max-width: 680px; padding: 40px 52px 48px; }
+  .features-section { max-width: 800px; }
+  .features-grid { gap: 18px; }
+  .feature-card { padding: 22px 18px; }
+  .social-section { max-width: 800px; }
+  .social-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .social-btn { padding: 18px 16px; flex-direction: column; text-align: center; gap: 10px; }
+  .social-btn svg { width: 32px; height: 32px; }
+  .footer-wrap { max-width: 800px; }
+  .section-divider-line { max-width: 800px; }
 }
 
-/* ── MOBILE BACKGROUND PERFORMANCE ──────────────── */
+/* ── Large Desktop ─── */
+@media (min-width: 1440px) {
+  .page { padding-top: 160px; padding-bottom: 80px; }
+  .header { max-width: 1200px; }
+  .hero-title { font-size: 6.5rem; }
+  .hero-sub { font-size: 1rem; letter-spacing: 0.6em; }
+  .sub-line { width: 100px; }
+  .card { max-width: 720px; padding: 44px 56px 52px; }
+  .features-section { max-width: 1000px; }
+  .social-section { max-width: 1000px; }
+  .footer-wrap { max-width: 1000px; }
+  .section-divider-line { max-width: 1000px; }
+}
+
+/* ── MOBILE BACKGROUND (video hidden, gradient bg) ─── */
 @media (max-width: 640px) {
   .bg-video { display: none; }
-  body { background: linear-gradient(160deg, #1a0000 0%, #0a0000 60%, #140000 100%); }
+  body {
+    background: linear-gradient(160deg, #1a0000 0%, #0a0000 50%, #120000 100%);
+  }
 }
 
-/* ── MOBILE LAYOUT OVERRIDES ─────────────────────── */
+/* ── Mobile compact ─── */
 @media (max-width: 480px) {
   .hero-title { font-size: clamp(2.4rem, 10vw, 3.2rem); }
   .card { padding: 20px 16px 24px; }
-  .q-btn { padding: 7px 14px; font-size: 0.78rem; }
-  .social-grid { grid-template-columns: 1fr 1fr !important; }
+  .q-btn { padding: 8px 16px; font-size: 0.78rem; }
+  .social-grid { grid-template-columns: 1fr 1fr; }
   .features-grid { grid-template-columns: 1fr 1fr; }
-  .feature-card { padding: 12px 10px; }
+  .feature-card { padding: 14px 10px; }
+  .social-btn { padding: 12px 16px; font-size: 0.84rem; }
 }
+
+/* ── No horizontal overflow safeguard ─── */
+html, body { overflow-x: hidden; }
+.page { overflow-x: hidden; max-width: 100vw; }
