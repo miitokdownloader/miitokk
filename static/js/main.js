@@ -13,13 +13,26 @@ function setQuality(el, q) {
   document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   selectedQuality = q;
+
+  const dlBtn = document.getElementById('dlBtn');
+  const dlWrap = document.getElementById('dlWrap');
+
   if (q === 'photo') {
     isPhotoMode = true;
-    document.getElementById('dlWrap').style.display = 'none';
-    setStatus('PHOTO mode is temporarily disabled.', 'err');
+    dlWrap.style.display = '';
+    // Change button to FETCH PHOTOS mode
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>FETCH PHOTOS';
+    dlBtn.onclick = function() {
+      var url = document.getElementById('urlInput').value.trim();
+      if (!url) { setStatus('Paste TikTok link first.', 'err'); return; }
+      fetchPhotos(url);
+    };
   } else {
     isPhotoMode = false;
-    document.getElementById('dlWrap').style.display = '';
+    dlWrap.style.display = '';
+    // Restore button to DOWNLOAD mode
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>DOWNLOAD';
+    dlBtn.onclick = function() { openModal(); };
   }
 }
 
@@ -33,11 +46,10 @@ function onUrlInput() {
   setStatus('', '');
 
   if (val.length > 10 && (val.includes('tiktok.com') || val.includes('vt.tiktok'))) {
-    if (isPhotoMode) {
-      // PHOTO mode is disabled - do not trigger any fetch
-    } else {
+    if (!isPhotoMode) {
       previewTimer = setTimeout(() => fetchPreview(val), 900);
     }
+    // In photo mode, user clicks FETCH PHOTOS manually
   }
 }
 
