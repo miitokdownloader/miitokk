@@ -6,22 +6,23 @@
   <title>MiiTok — TikTok Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
     /* ── VARIABLES ───────────────────────────────────── */
     :root {
       --red:        #cc0000;
       --red-deep:   #880000;
+      --red-dark:   #550000;
       --red-glow:   rgba(204,0,0,0.45);
       --red-soft:   rgba(204,0,0,0.18);
       --white:      #f5ede0;
       --white-dim:  rgba(245,237,224,0.7);
       --black:      #0a0806;
-      --glass:      rgba(8,4,4,0.55);
-      --glass-border: rgba(204,0,0,0.3);
-      --overlay:    rgba(5,2,2,0.38);
-      --font-logo:  'Bebas Neue', 'Oswald', sans-serif;
+      --glass:      rgba(8,4,4,0.60);
+      --glass-border: rgba(204,0,0,0.25);
+      --overlay:    rgba(0,0,0,0.45);
+      --font-logo:  'Anton', 'Bebas Neue', sans-serif;
       --font-ui:    'Oswald', sans-serif;
       --font-body:  'Poppins', sans-serif;
     }
@@ -38,21 +39,16 @@
       overflow-x: hidden;
     }
 
-    /* ── BACKGROUND IMAGE ────────────────────────────── */
-    .bg-image {
+    /* ── BACKGROUND VIDEO ────────────────────────────── */
+    .bg-video {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
+      object-fit: cover;
+      object-position: center center;
       z-index: 0;
-      background-image: url('/static/background.jpg');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
-    }
-
-    @media (min-width: 768px) {
-      .bg-image { background-position: center center; }
+      pointer-events: none;
     }
 
     .bg-overlay {
@@ -70,7 +66,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 48px 20px 64px;
+      padding: 48px 16px 64px;
+      overflow-x: hidden;
     }
 
     /* ── HEADER ──────────────────────────────────────── */
@@ -95,42 +92,43 @@
     }
 
     .hero-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(2.8rem, 10vw, 5.5rem);
+      font-family: 'Anton', 'Bebas Neue', sans-serif;
+      font-size: clamp(3.2rem, 12vw, 6.5rem);
       font-weight: 400;
-      letter-spacing: 0.08em;
-      color: #f5ede0;
+      letter-spacing: 0.1em;
+      color: #ffffff;
       line-height: 1;
-      text-shadow: 0 0 8px rgba(204,0,0,0.4), 0 2px 4px rgba(0,0,0,0.8);
+      text-shadow:
+        0 0 30px rgba(204,0,0,0.7),
+        0 0 60px rgba(204,0,0,0.3),
+        0 2px 8px rgba(0,0,0,0.9);
       margin-bottom: 6px;
-    }
-
-    @media (max-width: 480px) {
-      .hero-title { font-size: 2.75rem; }
     }
 
     .hero-sub {
       font-family: 'Oswald', sans-serif;
-      font-weight: 600;
-      font-size: clamp(0.85rem, 3vw, 1.1rem);
-      letter-spacing: 0.35em;
-      color: rgba(204,0,0,0.9);
+      font-weight: 700;
+      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+      letter-spacing: 0.45em;
+      color: rgba(220,40,40,0.95);
       text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(204,0,0,0.5);
     }
 
     /* ── MAIN CARD ───────────────────────────────────── */
     .card {
-      width: 100%;
-      max-width: 640px;
+      width: 92%;
+      max-width: 520px;
       background: var(--glass);
-      border: 1px solid var(--glass-border);
+      border: 1px solid rgba(204,0,0,0.25);
       border-radius: 16px;
       padding: 28px 24px 32px;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       box-shadow:
-        0 0 40px rgba(0,0,0,0.6),
-        0 0 0 1px rgba(204,0,0,0.08) inset;
+        0 0 60px rgba(204,0,0,0.15),
+        0 0 0 1px rgba(204,0,0,0.2) inset,
+        0 20px 60px rgba(0,0,0,0.7);
     }
 
     /* ── QUALITY SELECTOR ────────────────────────────── */
@@ -144,11 +142,11 @@
 
     .q-btn {
       font-family: 'Oswald', sans-serif;
-      font-weight: 600;
-      font-size: 0.78rem;
+      font-weight: 700;
+      font-size: 0.82rem;
       letter-spacing: 0.15em;
-      padding: 7px 18px;
-      border-radius: 6px;
+      padding: 8px 20px;
+      border-radius: 8px;
       border: 1px solid rgba(204,0,0,0.35);
       background: transparent;
       color: rgba(245,237,224,0.5);
@@ -160,13 +158,14 @@
     .q-btn:hover {
       border-color: var(--red);
       color: var(--white);
+      box-shadow: 0 0 20px rgba(204,0,0,0.4);
     }
 
     .q-btn.active {
-      background: rgba(204,0,0,0.15);
+      background: rgba(204,0,0,0.2);
       border-color: var(--red);
       color: var(--white);
-      box-shadow: 0 0 16px rgba(204,0,0,0.5), inset 0 0 8px rgba(204,0,0,0.1);
+      box-shadow: 0 0 20px rgba(204,0,0,0.7), 0 0 40px rgba(204,0,0,0.3) inset;
       text-shadow: 0 0 8px var(--red-glow);
     }
 
@@ -183,9 +182,10 @@
       background: rgba(0,0,0,0.4);
       border: 1px solid rgba(204,0,0,0.3);
       border-radius: 10px;
-      padding: 14px 48px 14px 46px;
+      padding: 14px 48px 14px 48px;
       color: var(--white);
-      font-family: var(--font-body);
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
       font-size: 0.95rem;
       outline: none;
       transition: border-color 0.25s, box-shadow 0.25s;
@@ -204,7 +204,7 @@
       left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      color: rgba(204,0,0,0.6);
+      color: rgba(204,0,0,0.8);
       pointer-events: none;
       display: flex;
       align-items: center;
@@ -212,20 +212,32 @@
 
     .clear-btn {
       position: absolute;
-      right: 14px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
-      background: none;
+      background: rgba(255,255,255,0.08);
       border: none;
-      color: rgba(245,237,224,0.3);
-      font-size: 1.1rem;
-      cursor: pointer;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
       display: none;
-      line-height: 1;
-      padding: 4px;
+      align-items: center;
+      justify-content: center;
+      color: rgba(245,237,224,0.5);
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.2s;
     }
 
-    .clear-btn.visible { display: block; }
+    .clear-btn.visible {
+      display: flex;
+    }
+
+    .clear-btn:hover {
+      background: rgba(204,0,0,0.2);
+      box-shadow: 0 0 12px rgba(204,0,0,0.4);
+      color: white;
+    }
 
     /* ── PREVIEW CARD ────────────────────────────────── */
     .preview-card {
@@ -287,38 +299,38 @@
     .dl-btn {
       position: relative;
       z-index: 1;
-      font-family: 'Bebas Neue', sans-serif;
-      font-weight: 400;
-      font-size: 1.15rem;
-      letter-spacing: 0.3em;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.35em;
       color: var(--white);
-      background: linear-gradient(135deg, rgba(180,0,0,0.9) 0%, rgba(100,0,0,0.95) 100%);
+      background: linear-gradient(135deg, #cc0000 0%, #880000 50%, #550000 100%);
       border: 1px solid rgba(204,0,0,0.7);
-      border-radius: 10px;
-      padding: 16px 0;
+      border-radius: 12px;
+      padding: 16px 24px;
       width: 100%;
-      max-width: 320px;
+      max-width: 100%;
       cursor: pointer;
       text-align: center;
       transition: all 0.25s;
       box-shadow:
-        0 0 16px rgba(204,0,0,0.3),
-        0 4px 14px rgba(0,0,0,0.5);
+        0 4px 30px rgba(204,0,0,0.5),
+        0 0 60px rgba(204,0,0,0.15);
       animation: btnBreath 3s ease-in-out infinite;
     }
 
     @keyframes btnBreath {
-      0%, 100% { box-shadow: 0 0 16px rgba(204,0,0,0.3), 0 4px 14px rgba(0,0,0,0.5); }
-      50%       { box-shadow: 0 0 24px rgba(204,0,0,0.45), 0 4px 18px rgba(0,0,0,0.5); }
+      0%, 100% { box-shadow: 0 4px 30px rgba(204,0,0,0.5), 0 0 60px rgba(204,0,0,0.15); }
+      50%       { box-shadow: 0 4px 40px rgba(204,0,0,0.65), 0 0 80px rgba(204,0,0,0.25); }
     }
 
     .dl-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 36px rgba(204,0,0,0.6), 0 8px 24px rgba(0,0,0,0.6);
+      transform: scale(1.02) translateY(-2px);
+      box-shadow: 0 8px 48px rgba(204,0,0,0.7), 0 0 80px rgba(204,0,0,0.3);
       animation: none;
     }
 
-    .dl-btn:active { transform: translateY(0); }
+    .dl-btn:active { transform: translateY(0) scale(1); }
 
     .dl-btn:disabled {
       opacity: 0.4;
@@ -703,8 +715,15 @@
 
     /* ── DESKTOP TWEAKS ──────────────────────────────── */
     @media (min-width: 768px) {
-      .page { padding: 64px 40px 80px; }
-      .card { padding: 36px 36px 40px; }
+      .card {
+        padding: 36px 36px 40px;
+        width: 100%;
+        max-width: 520px;
+      }
+      .social-section {
+        width: 100%;
+        max-width: 520px;
+      }
     }
 
     /* ── TOP NAVBAR ─────────────────────────────────── */
@@ -712,16 +731,25 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       z-index: 50;
-      height: 60px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      background: rgba(8,4,4,0.75);
+      padding: 0 24px;
+      background: rgba(8,4,4,0.80);
       border-bottom: 1px solid rgba(204,0,0,0.35);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 2px 24px rgba(204,0,0,0.15);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 2px 28px rgba(204,0,0,0.18);
+    }
+
+    .top-nav::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(204,0,0,0.9) 30%, #cc0000 50%, rgba(204,0,0,0.9) 70%, transparent);
+      box-shadow: 0 0 18px rgba(204,0,0,0.8), 0 0 36px rgba(204,0,0,0.4);
     }
 
     .nav-left {
@@ -731,33 +759,35 @@
     }
 
     .nav-logo-img {
-      height: 36px;
-      width: 36px;
+      height: 42px;
+      width: 42px;
       object-fit: cover;
       border-radius: 50%;
       border: 1px solid rgba(204,0,0,0.45);
-      box-shadow: 0 0 10px rgba(204,0,0,0.3);
+      box-shadow: 0 0 14px rgba(204,0,0,0.4);
+      flex-shrink: 0;
     }
 
     .nav-brand {
-      font-family: 'Bebas Neue', 'Oswald', sans-serif;
+      font-family: 'Anton', 'Bebas Neue', sans-serif;
       font-weight: 400;
-      font-size: 1.3rem;
-      letter-spacing: 0.2em;
+      font-size: 1.5rem;
+      letter-spacing: 0.25em;
       color: var(--white);
-      text-shadow: 0 0 10px rgba(204,0,0,0.5);
+      text-shadow: 0 0 14px rgba(204,0,0,0.6), 0 0 30px rgba(204,0,0,0.25);
     }
 
     .nav-right {
       position: relative;
+      padding-right: 4px;
     }
 
     .hamburger-btn {
       background: transparent;
       border: 1px solid rgba(204,0,0,0.35);
       border-radius: 8px;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -777,26 +807,26 @@
       display: none;
       position: absolute;
       top: calc(100% + 10px);
-      right: 0;
-      min-width: 200px;
-      background: rgba(10,4,4,0.95);
+      right: 4px;
+      min-width: 220px;
+      background: rgba(10,4,4,0.97);
       border: 1px solid rgba(204,0,0,0.35);
       border-radius: 12px;
       padding: 8px 0;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 20px rgba(204,0,0,0.15);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 24px rgba(204,0,0,0.18);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      animation: menuFadeIn 0.2s ease;
       z-index: 60;
+      animation: slideDown 0.22s ease;
     }
 
     .nav-menu.open {
       display: block;
     }
 
-    @keyframes menuFadeIn {
-      from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .nav-menu a {
@@ -806,21 +836,23 @@
       padding: 11px 18px;
       text-decoration: none;
       font-family: 'Poppins', sans-serif;
-      font-weight: 600;
-      font-size: 0.88rem;
+      font-weight: 700;
+      font-size: 0.95rem;
       letter-spacing: 0.08em;
       color: rgba(245,237,224,0.75);
-      transition: color 0.18s, background 0.18s;
+      transition: color 0.18s, background 0.18s, box-shadow 0.18s;
     }
 
     .nav-menu a:hover {
       color: var(--white);
-      background: rgba(204,0,0,0.1);
+      background: rgba(204,0,0,0.15);
+      text-shadow: 0 0 10px rgba(204,0,0,0.5);
+      box-shadow: inset 3px 0 0 rgba(204,0,0,0.8);
     }
 
     .nav-menu a svg {
-      width: 17px;
-      height: 17px;
+      width: 20px;
+      height: 20px;
       flex-shrink: 0;
       color: rgba(204,0,0,0.8);
     }
@@ -837,29 +869,53 @@
 
     /* Offset page content for fixed navbar */
     .page {
-      padding-top: 108px; /* 60px navbar + original 48px */
+      padding-top: 112px; /* 64px navbar + 48px */
     }
 
     @media (min-width: 768px) {
       .page {
-        padding-top: 124px; /* 60px navbar + original 64px */
+        padding-top: 128px; /* 64px navbar + 64px */
+        padding-left: 24px;
+        padding-right: 24px;
       }
     }
 
     /* ── SOCIAL SECTION ──────────────────────────────── */
     .social-section {
-      width: 100%;
-      max-width: 640px;
+      position: relative;
+      width: 92%;
+      max-width: 520px;
       margin-top: 32px;
       text-align: center;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .social-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(204,0,0,0.8) 40%, rgba(204,0,0,0.8) 60%, transparent);
+      box-shadow: 0 0 10px rgba(204,0,0,0.5), 0 0 20px rgba(204,0,0,0.25);
+    }
+
+    .social-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(204,0,0,0.8) 40%, rgba(204,0,0,0.8) 60%, transparent);
+      box-shadow: 0 0 10px rgba(204,0,0,0.5), 0 0 20px rgba(204,0,0,0.25);
     }
 
     .social-title {
-      font-family: 'Bebas Neue', sans-serif;
+      font-family: 'Anton', 'Bebas Neue', sans-serif;
       font-size: 1.4rem;
-      letter-spacing: 0.3em;
+      letter-spacing: 0.35em;
       color: rgba(245,237,224,0.85);
       margin-bottom: 16px;
+      text-shadow: 0 0 20px rgba(204,0,0,0.4);
     }
 
     .social-grid {
@@ -890,7 +946,7 @@
       color: rgba(245,237,224,0.85);
       background: rgba(8,4,4,0.55);
       border: 1px solid rgba(204,0,0,0.25);
-      transition: all 0.2s;
+      transition: all 0.25s;
       backdrop-filter: blur(4px);
     }
 
@@ -898,11 +954,13 @@
       border-color: rgba(204,0,0,0.7);
       background: rgba(204,0,0,0.1);
       color: #f5ede0;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(204,0,0,0.2);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(204,0,0,0.25);
     }
 
     .social-btn svg {
+      width: 22px;
+      height: 22px;
       flex-shrink: 0;
       color: rgba(204,0,0,0.75);
     }
@@ -914,8 +972,10 @@
 </head>
 <body>
 
-  <!-- Background -->
-  <div class="bg-image"></div>
+  <!-- Background Video -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="/static/makima.mp4" type="video/mp4">
+  </video>
   <div class="bg-overlay"></div>
 
   <!-- Top Navbar -->
