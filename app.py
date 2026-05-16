@@ -8,6 +8,7 @@ import re
 import time
 import threading
 import subprocess
+import requests
 from urllib.parse import urlparse
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -51,9 +52,49 @@ def _is_valid_tiktok_url(url):
         return False
 
 
+# TikTok image-CDN allowlist used by /photo-proxy and /download-photo. Only
+# hosts that match one of these suffixes (case-insensitive) are allowed to be
+# proxied/streamed back to the client. This keeps the proxy from being abused
+# as a generic open relay while still covering TikTok's many image CDNs.
+_TIKTOK_IMAGE_CDN_SUFFIXES = (
+    '.tiktokcdn.com',
+    '.tiktokcdn-us.com',
+    '.tiktokv.com',
+    '.byteoversea.com',
+    '.bytecdn.cn',
+    '.muscdn.com',
+    '.musical.ly',
+    '.ibyteimg.com',
+    '.ipstatp.com',
+)
+
+_PHOTO_FILENAME_RE = re.compile(r'^[A-Za-z0-9._-]{1,64}$')
+_ALLOWED_PHOTO_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+
+def _is_valid_tiktok_image_url(url):
+    """Return True if url is http(s) and host ends in a known TikTok image CDN suffix."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = (parsed.netloc or '').lower().split(':')[0]
+        if not host:
+            return False
+        return any(host.endswith(suffix) for suffix in _TIKTOK_IMAGE_CDN_SUFFIXES)
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Security headers
 # ---------------------------------------------------------------------------
+# CSP rationale: img-src already permits 'data: https:' which covers the
+# inline thumbnails/photos rendered through /photo-proxy (same-origin) plus
+# any https:// fallbacks. connect-src 'self' is sufficient because the
+# frontend only XHR/fetches our own endpoints (/preview, /download, /photos,
+# /photo-proxy, /download-photo). The PHOTO mode does not introduce any new
+# external host, so CSP does not need to be widened.
 @app.after_request
 def set_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -289,17 +330,168 @@ def download():
 
 @app.route('/photos', methods=['POST'])
 def photos():
-    return jsonify({'error': 'PHOTO mode is temporarily disabled.'}), 503
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        url = data.get('url', '').strip()
+    else:
+        url = (request.form.get('url') or '').strip()
+
+    if not url:
+        return jsonify({'error': 'URL kosong'}), 400
+
+    if not _is_valid_tiktok_url(url):
+        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
+    # Rate limiting (per-IP, separate store from /download)
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip, _rate_store_photos):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
+
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'noplaylist': False,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        if not info:
+            return jsonify({'error': 'Konten ini bukan slideshow/foto.'}), 400
+
+        # Detect slideshow: yt-dlp returns _type=='playlist' for image
+        # slideshows, with each entry being one image. Some extractors
+        # represent it differently, so we also fall back to scanning entries
+        # for image-like URLs.
+        entries = info.get('entries') or []
+        if info.get('_type') != 'playlist' and not entries:
+            return jsonify({'error': 'Konten ini bukan slideshow/foto.'}), 400
+
+        photo_urls = []
+        seen = set()
+
+        def _is_image_url(candidate):
+            if not candidate or not isinstance(candidate, str):
+                return False
+            lowered = candidate.lower().split('?', 1)[0]
+            return lowered.endswith(_ALLOWED_PHOTO_EXTS) or lowered.endswith('.heic')
+
+        def _add(candidate):
+            if candidate and candidate not in seen:
+                seen.add(candidate)
+                photo_urls.append(candidate)
+
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            entry_url = entry.get('url')
+            if _is_image_url(entry_url):
+                _add(entry_url)
+                continue
+            # Fall back to the largest thumbnail
+            thumbs = entry.get('thumbnails') or []
+            if thumbs:
+                last = thumbs[-1]
+                if isinstance(last, dict):
+                    _add(last.get('url'))
+
+        if not photo_urls:
+            return jsonify({'error': 'Konten ini bukan slideshow/foto.'}), 400
+
+        return jsonify({
+            'photos': photo_urls,
+            'count': len(photo_urls),
+            'title': (info.get('title') or '')[:80],
+            'uploader': info.get('uploader') or '',
+            'thumbnail': info.get('thumbnail') or '',
+        })
+
+    except Exception:
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
 @app.route('/photo-proxy')
 def photo_proxy():
-    return '', 503
+    url = (request.args.get('url') or '').strip()
+    if not url or not _is_valid_tiktok_image_url(url):
+        return jsonify({'error': 'Invalid host'}), 400
+
+    try:
+        upstream = requests.get(
+            url,
+            stream=True,
+            timeout=15,
+            headers={
+                'User-Agent': 'Mozilla/5.0',
+                'Referer': 'https://www.tiktok.com/',
+            },
+        )
+        if upstream.status_code != 200:
+            return jsonify({'error': 'Gagal mengambil gambar'}), 502
+
+        mimetype = upstream.headers.get('Content-Type', 'image/jpeg').split(';', 1)[0].strip() or 'image/jpeg'
+
+        def _stream():
+            try:
+                for chunk in upstream.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
+            finally:
+                upstream.close()
+
+        resp = Response(_stream(), mimetype=mimetype)
+        resp.headers['Cache-Control'] = 'public, max-age=86400'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    except Exception:
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
 @app.route('/download-photo')
 def download_photo():
-    return '', 503
+    url = (request.args.get('url') or '').strip()
+    filename = (request.args.get('filename') or '').strip()
+
+    if not url or not _is_valid_tiktok_image_url(url):
+        return jsonify({'error': 'Invalid host'}), 400
+
+    # Sanitize filename: must match strict pattern AND end in an allowed image
+    # extension. Anything else falls back to a safe default.
+    safe_name = filename
+    if not safe_name or not _PHOTO_FILENAME_RE.match(safe_name) or not safe_name.lower().endswith(_ALLOWED_PHOTO_EXTS):
+        safe_name = 'miitok_photo.jpg'
+
+    try:
+        upstream = requests.get(
+            url,
+            stream=True,
+            timeout=15,
+            headers={
+                'User-Agent': 'Mozilla/5.0',
+                'Referer': 'https://www.tiktok.com/',
+            },
+        )
+        if upstream.status_code != 200:
+            return jsonify({'error': 'Gagal mengambil gambar'}), 502
+
+        mimetype = upstream.headers.get('Content-Type', 'image/jpeg').split(';', 1)[0].strip() or 'image/jpeg'
+
+        def _stream():
+            try:
+                for chunk in upstream.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
+            finally:
+                upstream.close()
+
+        resp = Response(_stream(), mimetype=mimetype)
+        resp.headers['Content-Disposition'] = f'attachment; filename="{safe_name}"'
+        resp.headers['Cache-Control'] = 'no-store'
+        return resp
+
+    except Exception:
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
 if __name__ == '__main__':
