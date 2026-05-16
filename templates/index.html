@@ -968,6 +968,21 @@
     .social-btn:hover svg {
       color: #cc0000;
     }
+
+    /* ── ANTI TEXT SELECTION ─────────────────────────── */
+    /* Apply to everything by default */
+    body {
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+
+    /* Restore full interaction on the URL input */
+    .url-input {
+      -webkit-user-select: text;
+      -webkit-touch-callout: default;
+      user-select: text;
+    }
   </style>
 </head>
 <body>
