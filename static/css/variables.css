@@ -1,0 +1,35 @@
+/* ── VARIABLES ───────────────────────────────────── */
+/* Design tokens. Loaded first so every other file can reference --name. */
+
+:root {
+  /* Brand palette (kept for legacy selectors) */
+  --red:          #cc0000;
+  --red-deep:     #880000;
+  --red-dark:     #550000;
+  --red-glow:     rgba(204, 0, 0, 0.45);
+  --red-soft:     rgba(204, 0, 0, 0.18);
+  --white:        #f5ede0;
+  --white-dim:    rgba(245, 237, 224, 0.7);
+  --black:        #0a0806;
+  --glass:        rgba(6, 2, 2, 0.72);
+  --glass-border: rgba(204, 0, 0, 0.35);
+
+  /* Overlay + glow tokens */
+  --overlay:      rgba(0, 0, 0, 0.45);
+  --glow-soft:    0 0 12px rgba(204, 0, 0, 0.45);
+  --glow-strong:  0 0 24px rgba(204, 0, 0, 0.6);
+
+  /* Typography tokens */
+  --font-display: 'Anton', 'Bebas Neue', sans-serif;
+  --font-ui:      'Rajdhani', 'Oswald', sans-serif;
+  --font-body:    'Poppins', sans-serif;
+  /* Legacy alias kept so any selector using --font-logo still resolves */
+  --font-logo:    'Anton', 'Bebas Neue', sans-serif;
+
+  /* Layout tokens */
+  --max-hero:     1200px;
+  --max-card:     680px;
+  --max-section:  1024px;
+  --radius-card:  16px;
+  --radius-btn:   12px;
+}
