@@ -35,17 +35,17 @@ async function fetchPreview(url) {
 }
 
 async function downloadAudio() {
-  if (isDownloading) return;
+  if (isDownloadingAudio) return;
   const url = document.getElementById('urlInput').value.trim();
   if (!url) {
     setStatus('Paste TikTok link first.', 'err');
     return;
   }
-  isDownloading = true;
+  isDownloadingAudio = true;
   const spinnerWrap = document.getElementById('spinnerWrap');
   const spinnerLabel = document.getElementById('spinnerLabel');
   spinnerWrap.classList.add('show');
-  if (spinnerLabel) spinnerLabel.innerHTML = '> EXTRACTING AUDIO&hellip;';
+  if (spinnerLabel) spinnerLabel.textContent = '> EXTRACTING AUDIO\u2026';
   setStatus('', '');
 
   try {
@@ -80,9 +80,9 @@ async function downloadAudio() {
   } catch(e) {
     setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
   } finally {
-    isDownloading = false;
+    isDownloadingAudio = false;
     spinnerWrap.classList.remove('show');
-    if (spinnerLabel) spinnerLabel.innerHTML = 'MEMPROSES&hellip;';
+    if (spinnerLabel) spinnerLabel.textContent = 'MEMPROSES\u2026';
   }
 }
 
@@ -157,7 +157,7 @@ async function confirmDownload() {
   document.getElementById('spinnerWrap').classList.add('show');
   const spinnerLabel = document.getElementById('spinnerLabel');
   if (spinnerLabel) {
-    spinnerLabel.innerHTML = '> LINK DETECTED<br>> QUALITY: ' + (qualityLabel[selectedQuality] || 'BEST') + '<br>> CONVERTING MP4&hellip;';
+    spinnerLabel.textContent = '> LINK DETECTED\n> QUALITY: ' + (qualityLabel[selectedQuality] || 'BEST') + '\n> CONVERTING MP4\u2026';
   }
   setStatus('', '');
 
@@ -207,6 +207,6 @@ async function confirmDownload() {
     btn.disabled = false;
     document.getElementById('spinnerWrap').classList.remove('show');
     const spinnerLabelEl = document.getElementById('spinnerLabel');
-    if (spinnerLabelEl) spinnerLabelEl.innerHTML = 'MEMPROSES&hellip;';
+    if (spinnerLabelEl) spinnerLabelEl.textContent = 'MEMPROSES\u2026';
   }
 }

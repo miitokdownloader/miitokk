@@ -1,6 +1,7 @@
 /* ── STATE ────────────────────────────────────── */
 let selectedQuality = 'best';
-let isDownloading   = false;
+let isDownloading      = false;
+let isDownloadingAudio = false;
 let previewData     = null;
 let previewTimer    = null;
 let photoUrls       = [];

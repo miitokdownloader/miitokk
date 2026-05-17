@@ -559,8 +559,20 @@ def download_audio():
         return send_file(output_path, as_attachment=True, download_name='miitok_audio.mp3', mimetype='audio/mpeg')
 
     except yt_dlp.utils.DownloadError as e:
+        # Clean up any partially-downloaded raw files
+        for f in glob.glob(f"/tmp/{tmp_id}_audio_raw.*"):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
         return jsonify({'error': 'Audio belum bisa diproses. Coba video lain.'}), 500
     except Exception as e:
+        # Clean up any partially-downloaded raw files
+        for f in glob.glob(f"/tmp/{tmp_id}_audio_raw.*"):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 

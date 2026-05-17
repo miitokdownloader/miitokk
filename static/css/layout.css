@@ -81,7 +81,6 @@
   text-shadow: 0 0 8px rgba(204,0,0,0.5), 0 0 20px rgba(204,0,0,0.2), 0 2px 12px rgba(204,0,0,0.4), 0 0 4px rgba(255,255,255,0.1);
   position: relative;
   animation: glitch 8s ease-in-out infinite, glowPulse 4s ease-in-out infinite;
-  will-change: transform, opacity;
 }
 
 .hero-title::after {
@@ -194,7 +193,6 @@
   color: var(--white);
   text-shadow: 0 0 6px rgba(204,0,0,0.4), 0 0 12px rgba(204,0,0,0.2), 0 0 3px rgba(255,255,255,0.1);
   animation: glitch 10s ease-in-out infinite;
-  will-change: transform;
 }
 
 .nav-right {
