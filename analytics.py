@@ -27,6 +27,10 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        conn.execute('''
+            CREATE INDEX IF NOT EXISTS idx_visitor_ip
+            ON analytics_events (event_type, ip_hash)
+        ''')
         conn.commit()
 
 

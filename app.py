@@ -173,9 +173,10 @@ def track():
 
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
 
-    # Rate limiting
-    if not _check_rate_limit(client_ip, _rate_store_track, RATE_LIMIT_TRACK_SECONDS):
-        return jsonify({'error': 'Too many requests'}), 429
+    # Rate limiting (skip for 'visitor' since it's deduplicated server-side)
+    if event_type != 'visitor':
+        if not _check_rate_limit(client_ip, _rate_store_track, RATE_LIMIT_TRACK_SECONDS):
+            return jsonify({'error': 'Too many requests'}), 429
 
     salt = os.environ.get('ANALYTICS_SALT', 'mii_network_salt')
     ip_hash = hashlib.sha256((client_ip + salt).encode()).hexdigest()
