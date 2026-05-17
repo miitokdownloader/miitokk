@@ -30,6 +30,17 @@ def init_db():
         conn.commit()
 
 
+def has_visitor(ip_hash):
+    """Return True if a visitor event already exists for this ip_hash."""
+    conn = _get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM analytics_events WHERE event_type = 'visitor' AND ip_hash = ? LIMIT 1",
+        (ip_hash,)
+    )
+    return cur.fetchone() is not None
+
+
 def record_event(event_type, ip_hash, user_agent):
     conn = _get_conn()
     with _write_lock:
@@ -44,32 +55,25 @@ def get_stats():
     conn = _get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'page_view'")
-    total_views = cur.fetchone()[0]
+    # Single GROUP BY query instead of 8 sequential COUNT queries
+    cur.execute("SELECT event_type, COUNT(*) as count FROM analytics_events GROUP BY event_type")
+    counts = {}
+    for row in cur.fetchall():
+        counts[row[0]] = row[1]
 
+    # Unique visitors requires a distinct count
     cur.execute("SELECT COUNT(DISTINCT ip_hash) FROM analytics_events WHERE event_type = 'visitor'")
     total_visitors = cur.fetchone()[0]
 
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'download_click'")
-    total_download_clicks = cur.fetchone()[0]
+    total_views = counts.get('page_view', 0)
+    total_download_clicks = counts.get('download_click', 0)
+    total_download_success = counts.get('download_success', 0)
+    total_downloads = total_download_success
 
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'download_success'")
-    total_download_success = cur.fetchone()[0]
-
-    total_downloads = total_download_clicks + total_download_success
-
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'instagram_click'")
-    instagram_clicks = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'telegram_click'")
-    telegram_clicks = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'whatsapp_click'")
-    whatsapp_clicks = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM analytics_events WHERE event_type = 'lynkid_click'")
-    lynkid_clicks = cur.fetchone()[0]
-
+    instagram_clicks = counts.get('instagram_click', 0)
+    telegram_clicks = counts.get('telegram_click', 0)
+    whatsapp_clicks = counts.get('whatsapp_click', 0)
+    lynkid_clicks = counts.get('lynkid_click', 0)
     total_social_clicks = instagram_clicks + telegram_clicks + whatsapp_clicks + lynkid_clicks
 
     return {

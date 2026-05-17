@@ -31,16 +31,20 @@ _rate_lock = threading.Lock()
 _rate_store_download = {}  # {ip: last_request_timestamp} for /download
 _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
+_rate_store_track = {}     # {ip: last_request_timestamp} for /track
 RATE_LIMIT_SECONDS = 10
+RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
 
 
-def _check_rate_limit(ip, store):
+def _check_rate_limit(ip, store, limit_seconds=None):
     """Return True if the request is allowed, False if rate-limited."""
+    if limit_seconds is None:
+        limit_seconds = RATE_LIMIT_SECONDS
     now = time.time()
     with _rate_lock:
         last = store.get(ip)
-        if last is not None and (now - last) < RATE_LIMIT_SECONDS:
+        if last is not None and (now - last) < limit_seconds:
             return False
         store[ip] = now
         return True
@@ -168,8 +172,18 @@ def track():
         return jsonify({'error': 'Invalid event_type'}), 400
 
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-    ip_hash = hashlib.sha256((client_ip + 'mii_network_salt').encode()).hexdigest()
+
+    # Rate limiting
+    if not _check_rate_limit(client_ip, _rate_store_track, RATE_LIMIT_TRACK_SECONDS):
+        return jsonify({'error': 'Too many requests'}), 429
+
+    salt = os.environ.get('ANALYTICS_SALT', 'mii_network_salt')
+    ip_hash = hashlib.sha256((client_ip + salt).encode()).hexdigest()
     user_agent = request.headers.get('User-Agent', '')
+
+    # Deduplicate visitor events by ip_hash
+    if event_type == 'visitor' and analytics.has_visitor(ip_hash):
+        return jsonify({'success': True})
 
     analytics.record_event(event_type, ip_hash, user_agent)
     return jsonify({'success': True})
@@ -182,6 +196,12 @@ def stats():
 
 @app.route('/admin-stats')
 def admin_stats():
+    # Token-based authentication
+    admin_token = os.environ.get('ADMIN_TOKEN', 'mii_admin_2025')
+    provided_token = request.args.get('token', '')
+    if not provided_token or provided_token != admin_token:
+        return jsonify({'error': 'Forbidden'}), 403
+
     detailed = analytics.get_detailed_stats()
     summary = analytics.get_stats()
 
