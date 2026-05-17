@@ -15,7 +15,7 @@ async function fetchPhotos(url) {
       setStatus(data.error || 'Gagal mengambil foto.', 'err');
       return;
     }
-    const photos = data.images || data.photos || [];
+    const photos = (data.images || []).map(function(item) { return typeof item === 'string' ? item : item.url; });
     renderCarousel(photos, data.count || photos.length);
     // Show preview card with photo metadata if available
     if (data.title || data.uploader || data.thumbnail) {
@@ -55,6 +55,7 @@ function renderCarousel(photos, count) {
     return;
   }
   photoUrls = photos;
+  var hiddenCount = 0;
   countEl.textContent = 'Photos found: ' + count;
   countEl.style.color = 'rgba(204,0,0,0.8)';
   photos.forEach(function(url, i) {
@@ -64,6 +65,16 @@ function renderCarousel(photos, count) {
     img.src     = '/photo-proxy?url=' + encodeURIComponent(url);
     img.alt     = 'Photo ' + (i + 1);
     img.loading = 'lazy';
+    img.onerror = function() {
+      card.style.display = 'none';
+      hiddenCount++;
+      var visibleCount = photos.length - hiddenCount;
+      countEl.textContent = visibleCount > 0 ? 'Photos found: ' + visibleCount : '';
+      if (visibleCount === 0) {
+        setStatus('Tidak ada foto yang bisa ditampilkan.', 'err');
+        document.getElementById('downloadAllBtn').style.display = 'none';
+      }
+    };
     const footer = document.createElement('div');
     footer.className = 'photo-card-footer';
     const btn = document.createElement('button');
