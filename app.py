@@ -9,8 +9,10 @@ import json
 import time
 import threading
 import subprocess
+import hashlib
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
+import analytics
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -20,6 +22,7 @@ except Exception as e:
     print("[startup] FFMPEG ERROR:", e)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+analytics.init_db()
 
 # ---------------------------------------------------------------------------
 # Rate limiting
@@ -28,16 +31,20 @@ _rate_lock = threading.Lock()
 _rate_store_download = {}  # {ip: last_request_timestamp} for /download
 _rate_store_photos = {}    # {ip: last_request_timestamp} for /photos
 _rate_store_proxy = {}     # {ip: last_request_timestamp} for /photo-proxy & /download-photo
+_rate_store_track = {}     # {ip: last_request_timestamp} for /track
 RATE_LIMIT_SECONDS = 10
+RATE_LIMIT_TRACK_SECONDS = 2
 RATE_LIMIT_PROXY_SECONDS = 1  # Allow 1 request per second per IP for proxy
 
 
-def _check_rate_limit(ip, store):
+def _check_rate_limit(ip, store, limit_seconds=None):
     """Return True if the request is allowed, False if rate-limited."""
+    if limit_seconds is None:
+        limit_seconds = RATE_LIMIT_SECONDS
     now = time.time()
     with _rate_lock:
         last = store.get(ip)
-        if last is not None and (now - last) < RATE_LIMIT_SECONDS:
+        if last is not None and (now - last) < limit_seconds:
             return False
         store[ip] = now
         return True
@@ -145,6 +152,156 @@ def set_security_headers(response):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+# ---------------------------------------------------------------------------
+# Analytics routes
+# ---------------------------------------------------------------------------
+_VALID_EVENT_TYPES = {
+    'page_view', 'visitor', 'download_click', 'download_success',
+    'instagram_click', 'telegram_click', 'whatsapp_click', 'lynkid_click',
+}
+
+
+@app.route('/track', methods=['POST'])
+def track():
+    data = request.get_json(silent=True) or {}
+    event_type = data.get('event_type', '').strip()
+
+    if event_type not in _VALID_EVENT_TYPES:
+        return jsonify({'error': 'Invalid event_type'}), 400
+
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+
+    # Rate limiting (skip for 'visitor' since it's deduplicated server-side)
+    if event_type != 'visitor':
+        if not _check_rate_limit(client_ip, _rate_store_track, RATE_LIMIT_TRACK_SECONDS):
+            return jsonify({'error': 'Too many requests'}), 429
+
+    salt = os.environ.get('ANALYTICS_SALT', 'mii_network_salt')
+    ip_hash = hashlib.sha256((client_ip + salt).encode()).hexdigest()
+    user_agent = request.headers.get('User-Agent', '')
+
+    # Deduplicate visitor events by ip_hash
+    if event_type == 'visitor' and analytics.has_visitor(ip_hash):
+        return jsonify({'success': True})
+
+    analytics.record_event(event_type, ip_hash, user_agent)
+    return jsonify({'success': True})
+
+
+@app.route('/stats')
+def stats():
+    return jsonify(analytics.get_stats())
+
+
+@app.route('/admin-stats')
+def admin_stats():
+    # Token-based authentication
+    admin_token = os.environ.get('ADMIN_TOKEN', 'mii_admin_2025')
+    provided_token = request.args.get('token', '')
+    if not provided_token or provided_token != admin_token:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    detailed = analytics.get_detailed_stats()
+    summary = analytics.get_stats()
+
+    rows_html = ''
+    for item in detailed:
+        rows_html += f'<tr><td>{item["event_type"]}</td><td>{item["count"]}</td></tr>'
+
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Stats - MiiTok</title>
+    <style>
+        body {{
+            background: #1a0a0a;
+            color: #f0d0d0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem;
+            margin: 0;
+        }}
+        h1 {{
+            color: #ff4444;
+            text-align: center;
+        }}
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }}
+        .card {{
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }}
+        .card .value {{
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4444;
+        }}
+        .card .label {{
+            font-size: 0.9rem;
+            color: #cc9999;
+            margin-top: 0.5rem;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }}
+        th, td {{
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+        }}
+        th {{
+            background: rgba(255, 68, 68, 0.15);
+            color: #ff6666;
+        }}
+        tr:hover {{
+            background: rgba(255, 68, 68, 0.05);
+        }}
+    </style>
+</head>
+<body>
+    <h1>MiiTok Analytics</h1>
+    <div class="summary">
+        <div class="card">
+            <div class="value">{summary["total_views"]}</div>
+            <div class="label">Page Views</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_visitors"]}</div>
+            <div class="label">Unique Visitors</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_downloads"]}</div>
+            <div class="label">Total Downloads</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_social_clicks"]}</div>
+            <div class="label">Social Clicks</div>
+        </div>
+    </div>
+    <h2 style="color: #ff6666;">Detailed Breakdown</h2>
+    <table>
+        <thead>
+            <tr><th>Event Type</th><th>Count</th></tr>
+        </thead>
+        <tbody>
+            {rows_html}
+        </tbody>
+    </table>
+</body>
+</html>'''
+    return html
 
 
 @app.route('/preview', methods=['POST'])

@@ -86,6 +86,7 @@ async function confirmDownload() {
     return;
   }
   closeModal();
+  trackEvent('download_click');
   isDownloading = true;
   const btn = document.getElementById('dlBtn');
   btn.disabled = true;
@@ -129,6 +130,7 @@ async function confirmDownload() {
       URL.revokeObjectURL(blobUrl);
     }, 1000);
     setStatus('Download berhasil!', 'ok');
+    trackEvent('download_success');
 
   } catch(e) {
     setStatus('Terjadi kesalahan, coba lagi.', 'err');
