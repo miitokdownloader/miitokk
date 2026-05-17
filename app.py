@@ -10,6 +10,10 @@ import threading
 import subprocess
 from urllib.parse import urlparse
 
+import shutil, subprocess
+print("FFMPEG PATH:", shutil.which("ffmpeg"))
+print("YTDLP VERSION:", yt_dlp.version.__version__)
+
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # Log ffmpeg availability at startup (works with both gunicorn and direct run)
@@ -306,6 +310,8 @@ def download():
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
+        if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
+            return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
         if 'Sign in' in msg or 'login' in msg.lower():
             return jsonify({'error': 'Video ini memerlukan login TikTok'}), 500
         return jsonify({'error': 'Download gagal. Pastikan link valid dan coba lagi.'}), 500
@@ -384,8 +390,15 @@ def photos():
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e)
+        if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
+            return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
         if 'Sign in' in msg or 'login' in msg.lower():
             return jsonify({'error': 'Konten ini memerlukan login TikTok'}), 500
+        return jsonify({'error': 'Gagal mengambil foto. Pastikan link valid dan coba lagi.'}), 500
+    except yt_dlp.utils.ExtractorError as e:
+        msg = str(e)
+        if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
+            return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
         return jsonify({'error': 'Gagal mengambil foto. Pastikan link valid dan coba lagi.'}), 500
     except Exception:
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500

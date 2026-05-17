@@ -1,4 +1,4 @@
-flask
-yt-dlp
-requests
+Flask
 gunicorn
+requests
+yt-dlp>=2025.01.26
