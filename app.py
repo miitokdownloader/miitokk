@@ -542,6 +542,10 @@ def download_audio():
                 os.remove(raw_file)
             except Exception:
                 pass
+            try:
+                os.remove(output_path)
+            except Exception:
+                pass
             return jsonify({'error': 'Konversi audio gagal. Coba lagi.'}), 500
 
         @after_this_request
