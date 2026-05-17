@@ -9,7 +9,7 @@ import json
 import time
 import threading
 import subprocess
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import requests as requests_lib
 
 import shutil, subprocess
@@ -383,9 +383,11 @@ def _extract_photos_fallback(url):
         for _ in range(_MAX_REDIRECTS):
             resp = requests_lib.get(current_url, headers=headers, timeout=15, allow_redirects=False)
             if resp.status_code in (301, 302, 303, 307, 308):
-                location = resp.headers.get('Location')
+                location = resp.headers.get('Location', '')
                 if not location:
                     return None
+                # Resolve relative redirects against current URL
+                location = urljoin(current_url, location)
                 if not _is_allowed_redirect_host(location):
                     return None
                 current_url = location
@@ -423,7 +425,7 @@ def _extract_photos_fallback(url):
         if match:
             try:
                 json_data = json.loads(match.group(1))
-                images = _extract_images_sigi(json_data)
+                images = _extract_images_sigi(json_data, url)
                 if images:
                     return images
             except (json.JSONDecodeError, ValueError):
@@ -437,12 +439,13 @@ def _extract_photos_fallback(url):
         if match:
             try:
                 json_data = json.loads(match.group(1))
-                images = _extract_images_sigi(json_data)
+                images = _extract_images_sigi(json_data, url)
                 if images:
                     return images
             except (json.JSONDecodeError, ValueError):
                 pass
 
+        app.logger.info('fallback: no JSON pattern matched for %s', url)
         return None
     except Exception as e:
         app.logger.warning('_extract_photos_fallback failed: %s', e, exc_info=True)
@@ -476,24 +479,30 @@ def _extract_images_universal(data):
         return None
 
 
-def _extract_images_sigi(data):
+def _extract_images_sigi(data, url=None):
     """Extract image URLs from SIGI_STATE JSON structure."""
     try:
         item_module = data.get("ItemModule", {})
         if not item_module:
             return None
 
-        for item_key in item_module:
-            item = item_module[item_key]
+        # Try to extract item ID from the URL to prefer matching entry
+        item_id = None
+        if url:
+            id_match = re.search(r'/(?:photo|video)/(\d+)', url)
+            if id_match:
+                item_id = id_match.group(1)
+
+        def _images_from_item(item):
+            """Extract validated image URLs from an item dict."""
             if not isinstance(item, dict):
-                continue
+                return None
             image_post = item.get("imagePost", {})
             if not image_post:
-                continue
+                return None
             images_list = image_post.get("images", [])
             if not images_list:
-                continue
-
+                return None
             result = []
             for img in images_list:
                 image_url = img.get("imageURL", {})
@@ -502,8 +511,19 @@ def _extract_images_sigi(data):
                     candidate = url_list[0]
                     if _is_allowed_cdn_url(candidate):
                         result.append(candidate)
-            if result:
-                return result
+            return result if result else None
+
+        # If we have an item ID, try to match it directly
+        if item_id and item_id in item_module:
+            images = _images_from_item(item_module[item_id])
+            if images:
+                return images
+
+        # Fall back to first entry that has images
+        for item_key in item_module:
+            images = _images_from_item(item_module[item_key])
+            if images:
+                return images
         return None
     except Exception:
         return None
