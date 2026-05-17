@@ -11,11 +11,12 @@ async function fetchPhotos(url) {
     fd.append('url', url);
     const res = await fetch('/photos', { method: 'POST', body: fd });
     const data = await res.json();
-    if (data.error) {
-      setStatus(data.error, 'err');
+    if (data.error || data.success === false) {
+      setStatus(data.error || 'Gagal mengambil foto.', 'err');
       return;
     }
-    renderCarousel(data.photos || [], data.count || 0);
+    const photos = data.images || data.photos || [];
+    renderCarousel(photos, data.count || photos.length);
     // Show preview card with photo metadata if available
     if (data.title || data.uploader || data.thumbnail) {
       previewData = {

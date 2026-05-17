@@ -5,10 +5,12 @@ import uuid
 import shutil
 import glob
 import re
+import json
 import time
 import threading
 import subprocess
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+import requests as requests_lib
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -56,6 +58,22 @@ def _check_proxy_rate_limit(ip):
 # URL validation
 # ---------------------------------------------------------------------------
 TIKTOK_DOMAINS = {'tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com', 'www.tiktok.com'}
+
+# Extended domain set for redirect validation (includes CDN hosts that may appear in redirect chains)
+_REDIRECT_ALLOWED_DOMAINS = TIKTOK_DOMAINS | {
+    'm.tiktok.com',
+    't.tiktok.com',
+}
+_REDIRECT_ALLOWED_SUFFIXES = (
+    '.tiktok.com',
+    '.tiktokcdn.com',
+    '.tiktokcdn-us.com',
+    '.musical.ly',
+    '.muscdn.com',
+    '.ibytedtos.com',
+    '.ipstatp.com',
+)
+_MAX_REDIRECTS = 5
 
 # Allowed CDN domains for photo proxy (to prevent SSRF)
 ALLOWED_CDN_SUFFIXES = (
@@ -313,6 +331,204 @@ def download():
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
+# ---------------------------------------------------------------------------
+# Fallback photo extractor (when yt-dlp fails)
+# ---------------------------------------------------------------------------
+def _is_allowed_redirect_host(url):
+    """Check whether a redirect destination URL is on an allowed TikTok-related host."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        hostname = hostname.lower()
+        if hostname in _REDIRECT_ALLOWED_DOMAINS:
+            return True
+        for suffix in _REDIRECT_ALLOWED_SUFFIXES:
+            if hostname.endswith(suffix):
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _make_fallback_photos_response(urls):
+    """Return a jsonify'd success response for fallback photo results."""
+    return jsonify({
+        'success': True,
+        'count': len(urls),
+        'images': urls,
+        'photos': urls,
+    })
+
+
+def _extract_photos_fallback(url):
+    """
+    Fallback extractor for TikTok photo/slideshow posts.
+    Fetches the TikTok page HTML, parses embedded JSON state, and extracts image URLs.
+    Returns a list of valid image URLs, or None on failure.
+    """
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.tiktok.com/',
+        }
+        # Manually follow redirects to validate each hop's hostname (SSRF protection)
+        current_url = url
+        resp = None
+        for _ in range(_MAX_REDIRECTS):
+            resp = requests_lib.get(current_url, headers=headers, timeout=15, allow_redirects=False)
+            if resp.status_code in (301, 302, 303, 307, 308):
+                location = resp.headers.get('Location', '')
+                if not location:
+                    return None
+                # Resolve relative redirects against current URL
+                location = urljoin(current_url, location)
+                if not _is_allowed_redirect_host(location):
+                    return None
+                current_url = location
+            else:
+                break
+        else:
+            # Exceeded max redirects
+            return None
+
+        if resp is None or resp.status_code != 200:
+            return None
+
+        html = resp.text
+        json_data = None
+
+        # Pattern a: __UNIVERSAL_DATA_FOR_REHYDRATION__
+        match = re.search(
+            r'<script\s+id="__UNIVERSAL_DATA_FOR_REHYDRATION__"\s+type="application/json">\s*(.*?)\s*</script>',
+            html, re.DOTALL
+        )
+        if match:
+            try:
+                json_data = json.loads(match.group(1))
+                images = _extract_images_universal(json_data)
+                if images:
+                    return images
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        # Pattern b: SIGI_STATE script tag
+        match = re.search(
+            r'<script\s+id="SIGI_STATE"\s+type="application/json">\s*(.*?)\s*</script>',
+            html, re.DOTALL
+        )
+        if match:
+            try:
+                json_data = json.loads(match.group(1))
+                images = _extract_images_sigi(json_data, url)
+                if images:
+                    return images
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        # Pattern c: window['SIGI_STATE'] inline JS assignment
+        match = re.search(
+            r"window\['SIGI_STATE'\]\s*=\s*(\{.*?\})\s*;",
+            html, re.DOTALL
+        )
+        if match:
+            try:
+                json_data = json.loads(match.group(1))
+                images = _extract_images_sigi(json_data, url)
+                if images:
+                    return images
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        app.logger.info('fallback: no JSON pattern matched for %s', url)
+        return None
+    except Exception as e:
+        app.logger.warning('_extract_photos_fallback failed: %s', e, exc_info=True)
+        return None
+
+
+def _extract_images_universal(data):
+    """Extract image URLs from __UNIVERSAL_DATA_FOR_REHYDRATION__ JSON structure."""
+    try:
+        item_struct = (
+            data.get("__DEFAULT_SCOPE__", {})
+            .get("webapp.video-detail", {})
+            .get("itemInfo", {})
+            .get("itemStruct", {})
+        )
+        image_post = item_struct.get("imagePost", {})
+        images_list = image_post.get("images", [])
+        if not images_list:
+            return None
+
+        result = []
+        for img in images_list:
+            image_url = img.get("imageURL", {})
+            url_list = image_url.get("urlList", [])
+            if url_list:
+                candidate = url_list[0]
+                if _is_allowed_cdn_url(candidate):
+                    result.append(candidate)
+        return result if result else None
+    except Exception:
+        return None
+
+
+def _extract_images_sigi(data, url=None):
+    """Extract image URLs from SIGI_STATE JSON structure."""
+    try:
+        item_module = data.get("ItemModule", {})
+        if not item_module:
+            return None
+
+        # Try to extract item ID from the URL to prefer matching entry
+        item_id = None
+        if url:
+            id_match = re.search(r'/(?:photo|video)/(\d+)', url)
+            if id_match:
+                item_id = id_match.group(1)
+
+        def _images_from_item(item):
+            """Extract validated image URLs from an item dict."""
+            if not isinstance(item, dict):
+                return None
+            image_post = item.get("imagePost", {})
+            if not image_post:
+                return None
+            images_list = image_post.get("images", [])
+            if not images_list:
+                return None
+            result = []
+            for img in images_list:
+                image_url = img.get("imageURL", {})
+                url_list = image_url.get("urlList", [])
+                if url_list:
+                    candidate = url_list[0]
+                    if _is_allowed_cdn_url(candidate):
+                        result.append(candidate)
+            return result if result else None
+
+        # If we have an item ID, try to match it directly
+        if item_id and item_id in item_module:
+            images = _images_from_item(item_module[item_id])
+            if images:
+                return images
+
+        # Fall back to first entry that has images
+        for item_key in item_module:
+            images = _images_from_item(item_module[item_key])
+            if images:
+                return images
+        return None
+    except Exception:
+        return None
+
+
 @app.route('/photos', methods=['POST'])
 def photos():
     if request.is_json:
@@ -322,15 +538,15 @@ def photos():
         url = (request.form.get('url') or '').strip()
 
     if not url:
-        return jsonify({'error': 'Masukkan link TikTok dulu'}), 400
+        return jsonify({'success': False, 'error': 'Masukkan link TikTok dulu'}), 400
 
     if not _is_valid_tiktok_url(url):
-        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+        return jsonify({'success': False, 'error': 'URL tidak valid atau bukan link TikTok'}), 400
 
     # Rate limiting
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     if not _check_rate_limit(client_ip, _rate_store_photos):
-        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
+        return jsonify({'success': False, 'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
     try:
         ydl_opts = {
@@ -342,7 +558,11 @@ def photos():
             info = ydl.extract_info(url, download=False)
 
         if not info:
-            return jsonify({'error': 'Tidak bisa mengambil info dari URL ini'}), 400
+            # yt-dlp returned nothing, try fallback
+            fallback_photos = _extract_photos_fallback(url)
+            if fallback_photos:
+                return _make_fallback_photos_response(fallback_photos)
+            return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
 
         # Check if it's a slideshow/photo post
         photo_urls = []
@@ -367,10 +587,16 @@ def photos():
                         photo_urls.append(fmt['url'])
 
         if not photo_urls:
-            return jsonify({'error': 'Foto tidak ditemukan atau link bukan slideshow.'}), 400
+            # yt-dlp found no photos, try fallback
+            fallback_photos = _extract_photos_fallback(url)
+            if fallback_photos:
+                return _make_fallback_photos_response(fallback_photos)
+            return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
 
         result = {
+            'success': True,
             'photos': photo_urls,
+            'images': photo_urls,
             'count': len(photo_urls),
         }
         if info.get('title'):
@@ -382,20 +608,30 @@ def photos():
 
         return jsonify(result)
 
-    except yt_dlp.utils.DownloadError as e:
+    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as e:
         msg = str(e)
         if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
-            return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
+            # Try fallback before returning error
+            fallback_photos = _extract_photos_fallback(url)
+            if fallback_photos:
+                return _make_fallback_photos_response(fallback_photos)
+            return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
         if 'Sign in' in msg or 'login' in msg.lower():
-            return jsonify({'error': 'Konten ini memerlukan login TikTok'}), 500
-        return jsonify({'error': 'Gagal mengambil foto. Pastikan link valid dan coba lagi.'}), 500
-    except yt_dlp.utils.ExtractorError as e:
-        msg = str(e)
-        if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
-            return jsonify({'error': 'TikTok photo belum didukung oleh extractor server saat ini.'}), 400
-        return jsonify({'error': 'Gagal mengambil foto. Pastikan link valid dan coba lagi.'}), 500
-    except Exception:
-        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
+            fallback_photos = _extract_photos_fallback(url)
+            if fallback_photos:
+                return _make_fallback_photos_response(fallback_photos)
+            return jsonify({'success': False, 'error': 'Konten ini memerlukan login TikTok'}), 400
+        fallback_photos = _extract_photos_fallback(url)
+        if fallback_photos:
+            return _make_fallback_photos_response(fallback_photos)
+        return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
+    except Exception as e:
+        # General exception - try fallback before returning error
+        app.logger.warning('/photos endpoint failed: %s', e, exc_info=True)
+        fallback_photos = _extract_photos_fallback(url)
+        if fallback_photos:
+            return _make_fallback_photos_response(fallback_photos)
+        return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 502
 
 
 @app.route('/photo-proxy')
