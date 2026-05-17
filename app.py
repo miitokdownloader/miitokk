@@ -11,19 +11,13 @@ import subprocess
 from urllib.parse import urlparse
 
 import shutil, subprocess
-print("FFMPEG PATH:", shutil.which("ffmpeg"))
-print("YTDLP VERSION:", yt_dlp.version.__version__)
+print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
+try:
+    print(subprocess.check_output(["ffmpeg", "-version"]).decode()[:300])
+except Exception as e:
+    print("[startup] FFMPEG ERROR:", e)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-
-# Log ffmpeg availability at startup (works with both gunicorn and direct run)
-_ffmpeg_startup_path = shutil.which("ffmpeg")
-if _ffmpeg_startup_path:
-    print(f"[startup] ffmpeg found: {_ffmpeg_startup_path}", flush=True)
-    _ffmpeg_version_result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
-    print(f"[startup] ffmpeg version output: {_ffmpeg_version_result.stdout.splitlines()[0] if _ffmpeg_version_result.stdout else 'unknown'}", flush=True)
-else:
-    print("[startup] WARNING: ffmpeg NOT found. Video conversion will not work.", flush=True)
 
 # ---------------------------------------------------------------------------
 # Rate limiting
