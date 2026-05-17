@@ -488,6 +488,98 @@ def download():
         return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
 
 
+@app.route('/download-audio', methods=['POST'])
+def download_audio():
+    data = request.get_json(silent=True) or {}
+    url = data.get('url', '').strip()
+
+    if not url:
+        return jsonify({'error': 'Masukkan link TikTok dulu'}), 400
+
+    if not _is_valid_tiktok_url(url):
+        return jsonify({'error': 'URL tidak valid atau bukan link TikTok'}), 400
+
+    # Rate limiting
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if not _check_rate_limit(client_ip, _rate_store_download):
+        return jsonify({'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
+
+    tmp_id = str(uuid.uuid4())
+
+    try:
+        ffmpeg_bin = shutil.which('ffmpeg')
+        if not ffmpeg_bin:
+            return jsonify({'error': 'Server belum support FFmpeg.'}), 500
+
+        # Download audio with yt-dlp
+        raw_outtmpl = f"/tmp/{tmp_id}_audio_raw.%(ext)s"
+        ydl_opts = {
+            'outtmpl': raw_outtmpl,
+            'format': 'bestaudio/best',
+            'quiet': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        # Find downloaded file
+        raw_candidates = glob.glob(f"/tmp/{tmp_id}_audio_raw.*")
+        if not raw_candidates:
+            return jsonify({'error': 'File audio tidak ditemukan setelah download'}), 500
+        raw_file = raw_candidates[0]
+
+        # Convert to MP3 with ffmpeg
+        output_path = f"/tmp/{tmp_id}_out.mp3"
+        ffmpeg_cmd = [
+            ffmpeg_bin, '-y', '-i', raw_file,
+            '-vn', '-acodec', 'libmp3lame', '-ab', '192k',
+            output_path,
+        ]
+
+        result = subprocess.run(ffmpeg_cmd, capture_output=True)
+        if result.returncode != 0:
+            try:
+                os.remove(raw_file)
+            except Exception:
+                pass
+            try:
+                os.remove(output_path)
+            except Exception:
+                pass
+            return jsonify({'error': 'Konversi audio gagal. Coba lagi.'}), 500
+
+        @after_this_request
+        def cleanup_audio(response):
+            try:
+                os.remove(raw_file)
+            except Exception:
+                pass
+            try:
+                os.remove(output_path)
+            except Exception:
+                pass
+            return response
+
+        return send_file(output_path, as_attachment=True, download_name='miitok_audio.mp3', mimetype='audio/mpeg')
+
+    except yt_dlp.utils.DownloadError as e:
+        # Clean up any partially-downloaded raw files
+        for f in glob.glob(f"/tmp/{tmp_id}_audio_raw.*"):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        return jsonify({'error': 'Audio belum bisa diproses. Coba video lain.'}), 500
+    except Exception as e:
+        # Clean up any partially-downloaded raw files
+        for f in glob.glob(f"/tmp/{tmp_id}_audio_raw.*"):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        return jsonify({'error': 'Terjadi kesalahan, coba lagi'}), 500
+
+
 # ---------------------------------------------------------------------------
 # Fallback photo extractor (when yt-dlp fails)
 # ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ async function fetchPreview(url) {
     const data = await res.json();
     if (data.error || !data.title) return;
     previewData = data;
+    lastPreviewUrl = url;
     document.getElementById('previewTitle').textContent = data.title || '';
     document.getElementById('previewUploader').textContent = data.uploader ? '@' + data.uploader : '';
     if (data.duration) {
@@ -15,11 +16,74 @@ async function fetchPreview(url) {
       const s = data.duration % 60;
       document.getElementById('previewDuration').textContent = m + ':' + String(s).padStart(2,'0');
     }
+    const thumb = document.getElementById('previewThumb');
     if (data.thumbnail) {
-      document.getElementById('previewThumb').src = data.thumbnail;
+      thumb.src = data.thumbnail;
+      thumb.classList.remove('preview-thumb-fallback');
+      thumb.onerror = function() {
+        thumb.classList.add('preview-thumb-fallback');
+        thumb.alt = 'MII';
+        thumb.src = '';
+      };
+    } else {
+      thumb.classList.add('preview-thumb-fallback');
+      thumb.alt = 'MII';
+      thumb.src = '';
     }
     document.getElementById('previewCard').classList.add('show');
   } catch(e) {}
+}
+
+async function downloadAudio() {
+  if (isDownloadingAudio) return;
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) {
+    setStatus('Paste TikTok link first.', 'err');
+    return;
+  }
+  isDownloadingAudio = true;
+  const spinnerWrap = document.getElementById('spinnerWrap');
+  const spinnerLabel = document.getElementById('spinnerLabel');
+  spinnerWrap.classList.add('show');
+  if (spinnerLabel) spinnerLabel.textContent = '> EXTRACTING AUDIO\u2026';
+  setStatus('', '');
+
+  try {
+    const response = await fetch('/download-audio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+
+    if (!response.ok) {
+      let errMsg = 'Audio belum bisa diproses. Coba video lain.';
+      try {
+        const errData = await response.json();
+        if (errData.error) errMsg = errData.error;
+      } catch(e) {}
+      setStatus(errMsg, 'err');
+      return;
+    }
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'miitok_audio.mp3';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+    setStatus('Audio download berhasil!', 'ok');
+  } catch(e) {
+    setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
+  } finally {
+    isDownloadingAudio = false;
+    spinnerWrap.classList.remove('show');
+    if (spinnerLabel) spinnerLabel.textContent = 'MEMPROSES\u2026';
+  }
 }
 
 function openModal() {
@@ -91,6 +155,10 @@ async function confirmDownload() {
   const btn = document.getElementById('dlBtn');
   btn.disabled = true;
   document.getElementById('spinnerWrap').classList.add('show');
+  const spinnerLabel = document.getElementById('spinnerLabel');
+  if (spinnerLabel) {
+    spinnerLabel.textContent = '> LINK DETECTED\n> QUALITY: ' + (qualityLabel[selectedQuality] || 'BEST') + '\n> CONVERTING MP4\u2026';
+  }
   setStatus('', '');
 
   try {
@@ -138,5 +206,7 @@ async function confirmDownload() {
     isDownloading = false;
     btn.disabled = false;
     document.getElementById('spinnerWrap').classList.remove('show');
+    const spinnerLabelEl = document.getElementById('spinnerLabel');
+    if (spinnerLabelEl) spinnerLabelEl.textContent = 'MEMPROSES\u2026';
   }
 }

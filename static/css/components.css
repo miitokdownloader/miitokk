@@ -9,6 +9,33 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 0 24px rgba(204,0,0,0.08), 0 16px 40px rgba(0,0,0,0.6);
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-left: 2px solid var(--red);
+  border-top: 2px solid var(--red);
+  opacity: 0.6;
+  border-radius: 2px 0 0 0;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
+  opacity: 0.6;
+  border-radius: 0 0 2px 0;
 }
 
 /* ── QUALITY BUTTONS ──────────────────────────── */
@@ -177,6 +204,73 @@
   text-overflow: ellipsis;
 }
 
+/* ── PREVIEW ACTIONS (quality badge + MP3 btn) ── */
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.quality-badge {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--silver);
+  background: rgba(204,0,0,0.1);
+  border: 1px solid rgba(204,0,0,0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.mp3-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #f0d0d0;
+  background: rgba(139,0,0,0.3);
+  border: 1px solid rgba(204,0,0,0.5);
+  border-radius: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.mp3-btn:hover {
+  background: rgba(204,0,0,0.4);
+  box-shadow: 0 0 8px rgba(204,0,0,0.4);
+  color: var(--white);
+}
+
+.mp3-btn svg {
+  flex-shrink: 0;
+}
+
+/* ── THUMBNAIL FALLBACK ───────────────────────── */
+.preview-thumb-fallback {
+  background: rgba(10,5,5,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-logo);
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  color: rgba(204,0,0,0.5);
+}
+
+.preview-thumb-fallback::after {
+  content: 'MII';
+}
+
+img.preview-thumb-fallback {
+  color: transparent;
+}
+
 /* ── DOWNLOAD BUTTON ──────────────────────────── */
 .dl-wrap {
   margin-top: 22px;
@@ -264,6 +358,8 @@
   font-family: var(--font-ui);
   font-weight: 600;
   animation: pulse 1.4s ease-in-out infinite;
+  line-height: 1.6;
+  white-space: pre-line;
 }
 
 /* ── STATUS ───────────────────────────────────── */
@@ -956,9 +1052,11 @@
   font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.3em;
-  color: rgba(204,0,0,0.15);
+  color: rgba(204,0,0,0.12);
   margin-top: 8px;
   text-transform: uppercase;
+  text-shadow: 0 0 4px rgba(204,0,0,0.1);
+  user-select: none;
 }
 
 /* Stats visibility state (added by IntersectionObserver) */

@@ -6,6 +6,9 @@
   .card { padding: 18px 14px 22px; }
   .q-btn { padding: 7px 12px; font-size: 0.75rem; min-width: 60px; }
   .nav-brand { font-size: 1.2rem; }
+  .mp3-btn { font-size: 0.55rem; padding: 2px 8px; }
+  .quality-badge { font-size: 0.55rem; padding: 2px 6px; }
+  .preview-actions { gap: 6px; }
 }
 
 /* ── Tablet and up ─── */
@@ -100,6 +103,9 @@
   .social-btn { padding: 10px 14px; font-size: 0.82rem; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .stats-title-main { font-size: 1.3rem; }
+  .mp3-btn { font-size: 0.58rem; }
+  .quality-badge { font-size: 0.55rem; }
+  .hero-title::after { display: none; }
 }
 
 /* ── No horizontal overflow safeguard ─── */
