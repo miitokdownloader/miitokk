@@ -12,6 +12,7 @@ function hidePreview() {
 }
 
 /* ── NAVBAR HAMBURGER ─────────────────────────── */
+/* Supports nav-menu-header and nav-menu-status elements inside .nav-menu */
 (function() {
   const btn  = document.getElementById('hamburgerBtn');
   const menu = document.getElementById('navMenu');
