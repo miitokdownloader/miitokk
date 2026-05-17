@@ -9,8 +9,10 @@ import json
 import time
 import threading
 import subprocess
+import hashlib
 from urllib.parse import urlparse, urljoin
 import requests as requests_lib
+import analytics
 
 import shutil, subprocess
 print("[startup] FFMPEG PATH:", shutil.which("ffmpeg"))
@@ -20,6 +22,7 @@ except Exception as e:
     print("[startup] FFMPEG ERROR:", e)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+analytics.init_db()
 
 # ---------------------------------------------------------------------------
 # Rate limiting
@@ -145,6 +148,139 @@ def set_security_headers(response):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+# ---------------------------------------------------------------------------
+# Analytics routes
+# ---------------------------------------------------------------------------
+_VALID_EVENT_TYPES = {
+    'page_view', 'visitor', 'download_click', 'download_success',
+    'instagram_click', 'telegram_click', 'whatsapp_click', 'lynkid_click',
+}
+
+
+@app.route('/track', methods=['POST'])
+def track():
+    data = request.get_json(silent=True) or {}
+    event_type = data.get('event_type', '').strip()
+
+    if event_type not in _VALID_EVENT_TYPES:
+        return jsonify({'error': 'Invalid event_type'}), 400
+
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    ip_hash = hashlib.sha256((client_ip + 'mii_network_salt').encode()).hexdigest()
+    user_agent = request.headers.get('User-Agent', '')
+
+    analytics.record_event(event_type, ip_hash, user_agent)
+    return jsonify({'success': True})
+
+
+@app.route('/stats')
+def stats():
+    return jsonify(analytics.get_stats())
+
+
+@app.route('/admin-stats')
+def admin_stats():
+    detailed = analytics.get_detailed_stats()
+    summary = analytics.get_stats()
+
+    rows_html = ''
+    for item in detailed:
+        rows_html += f'<tr><td>{item["event_type"]}</td><td>{item["count"]}</td></tr>'
+
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Stats - MiiTok</title>
+    <style>
+        body {{
+            background: #1a0a0a;
+            color: #f0d0d0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem;
+            margin: 0;
+        }}
+        h1 {{
+            color: #ff4444;
+            text-align: center;
+        }}
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }}
+        .card {{
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }}
+        .card .value {{
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4444;
+        }}
+        .card .label {{
+            font-size: 0.9rem;
+            color: #cc9999;
+            margin-top: 0.5rem;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }}
+        th, td {{
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+        }}
+        th {{
+            background: rgba(255, 68, 68, 0.15);
+            color: #ff6666;
+        }}
+        tr:hover {{
+            background: rgba(255, 68, 68, 0.05);
+        }}
+    </style>
+</head>
+<body>
+    <h1>MiiTok Analytics</h1>
+    <div class="summary">
+        <div class="card">
+            <div class="value">{summary["total_views"]}</div>
+            <div class="label">Page Views</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_visitors"]}</div>
+            <div class="label">Unique Visitors</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_downloads"]}</div>
+            <div class="label">Total Downloads</div>
+        </div>
+        <div class="card">
+            <div class="value">{summary["total_social_clicks"]}</div>
+            <div class="label">Social Clicks</div>
+        </div>
+    </div>
+    <h2 style="color: #ff6666;">Detailed Breakdown</h2>
+    <table>
+        <thead>
+            <tr><th>Event Type</th><th>Count</th></tr>
+        </thead>
+        <tbody>
+            {rows_html}
+        </tbody>
+    </table>
+</body>
+</html>'''
+    return html
 
 
 @app.route('/preview', methods=['POST'])
