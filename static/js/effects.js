@@ -33,15 +33,26 @@
     observer.observe(statsSection);
   }
 
-  /* Add glow class to stat values after counting completes */
+  /* Add glow class to stat values after counting completes.
+     The counter in analytics.js runs for 1500ms starting on DOMContentLoaded.
+     If the section becomes visible after the counter already finished,
+     apply the glow immediately. Otherwise wait for the counter duration. */
   function addGlowOnComplete() {
+    var values = document.querySelectorAll('.stat-value');
+    var pageLoadTime = window.__effectsLoadTime || Date.now();
+    var counterDuration = 1600; // slightly above analytics.js 1500ms
+    var elapsed = Date.now() - pageLoadTime;
+    var remaining = Math.max(0, counterDuration - elapsed);
+
     setTimeout(function() {
-      var values = document.querySelectorAll('.stat-value');
       values.forEach(function(el) {
         el.classList.add('counter-done');
       });
-    }, 2200);
+    }, remaining);
   }
+
+  /* Record load time so we can calculate counter elapsed */
+  window.__effectsLoadTime = Date.now();
 
   /* Initialize on DOM ready */
   if (document.readyState === 'loading') {

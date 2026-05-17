@@ -61,3 +61,19 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── REDUCED MOTION ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .stats-scanline,
+  .control-badge-dot,
+  .server-online-dot,
+  .stat-value,
+  .stats-title-main,
+  .spinner-label {
+    animation: none;
+  }
+
+  .control-flicker {
+    animation: none;
+  }
+}

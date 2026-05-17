@@ -960,3 +960,18 @@
   margin-top: 8px;
   text-transform: uppercase;
 }
+
+/* Stats visibility state (added by IntersectionObserver) */
+.stats-section.stats-visible .stat-box {
+  box-shadow: var(--hud-glow);
+}
+
+/* Counter done glow state (added after counter animation completes) */
+.stat-value.counter-done {
+  text-shadow: 0 0 10px rgba(204,0,0,0.6), 0 0 20px rgba(204,0,0,0.3);
+}
+
+/* Control flicker animation class (used on stats title) */
+.control-flicker {
+  animation: controlFlicker 4s infinite;
+}
