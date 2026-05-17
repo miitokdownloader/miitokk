@@ -42,10 +42,8 @@ async function downloadAudio() {
     return;
   }
   isDownloadingAudio = true;
-  const spinnerWrap = document.getElementById('spinnerWrap');
-  const spinnerLabel = document.getElementById('spinnerLabel');
-  spinnerWrap.classList.add('show');
-  if (spinnerLabel) spinnerLabel.textContent = '> EXTRACTING AUDIO\u2026';
+  const mp3Btn = document.querySelector('.mp3-btn');
+  if (mp3Btn) mp3Btn.classList.add('loading');
   setStatus('', '');
 
   try {
@@ -81,8 +79,7 @@ async function downloadAudio() {
     setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
   } finally {
     isDownloadingAudio = false;
-    spinnerWrap.classList.remove('show');
-    if (spinnerLabel) spinnerLabel.textContent = 'MEMPROSES\u2026';
+    if (mp3Btn) mp3Btn.classList.remove('loading');
   }
 }
 
