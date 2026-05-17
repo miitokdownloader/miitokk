@@ -55,6 +55,7 @@ function renderCarousel(photos, count) {
     return;
   }
   photoUrls = photos;
+  var hiddenCount = 0;
   countEl.textContent = 'Photos found: ' + count;
   countEl.style.color = 'rgba(204,0,0,0.8)';
   photos.forEach(function(url, i) {
@@ -66,6 +67,13 @@ function renderCarousel(photos, count) {
     img.loading = 'lazy';
     img.onerror = function() {
       card.style.display = 'none';
+      hiddenCount++;
+      var visibleCount = photos.length - hiddenCount;
+      countEl.textContent = visibleCount > 0 ? 'Photos found: ' + visibleCount : '';
+      if (visibleCount === 0) {
+        setStatus('Tidak ada foto yang bisa ditampilkan.', 'err');
+        document.getElementById('downloadAllBtn').style.display = 'none';
+      }
     };
     const footer = document.createElement('div');
     footer.className = 'photo-card-footer';

@@ -361,6 +361,7 @@ def _make_fallback_photos_response(urls):
         'success': True,
         'count': len(urls),
         'images': images,
+        'photos': urls,  # backward compat
     })
 
 
@@ -616,6 +617,7 @@ def photos():
             'success': True,
             'images': images,
             'count': len(photo_urls),
+            'photos': photo_urls,  # backward compat
         }
         if info.get('title'):
             result['title'] = info['title'][:80]
@@ -626,7 +628,10 @@ def photos():
 
         return jsonify(result)
 
-    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as e:
+        msg = str(e)
+        if 'Sign in' in msg or 'login' in msg.lower():
+            return jsonify({'success': False, 'error': 'Konten ini memerlukan login TikTok'}), 400
         return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
     except Exception as e:
         app.logger.warning('/photos endpoint failed: %s', e, exc_info=True)
