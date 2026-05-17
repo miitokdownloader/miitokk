@@ -252,7 +252,7 @@ def download():
         if quality == '720':
             ffmpeg_cmd = [
                 ffmpeg_bin, '-y', '-i', raw_file,
-                '-vf', 'scale=-2:720',
+                '-vf', "scale='if(gt(ih,720),-2,iw)':'if(gt(ih,720),720,ih)'",
                 '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
                 '-pix_fmt', 'yuv420p',
                 '-c:a', 'aac', '-b:a', '128k',
@@ -262,7 +262,7 @@ def download():
         elif quality == '1080':
             ffmpeg_cmd = [
                 ffmpeg_bin, '-y', '-i', raw_file,
-                '-vf', 'scale=-2:1080',
+                '-vf', "scale='if(gt(ih,1080),-2,iw)':'if(gt(ih,1080),1080,ih)'",
                 '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
                 '-pix_fmt', 'yuv420p',
                 '-c:a', 'aac', '-b:a', '128k',
