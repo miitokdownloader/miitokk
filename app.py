@@ -356,11 +356,11 @@ def _is_allowed_redirect_host(url):
 
 def _make_fallback_photos_response(urls):
     """Return a jsonify'd success response for fallback photo results."""
+    images = [{'url': u, 'index': i + 1} for i, u in enumerate(urls)]
     return jsonify({
         'success': True,
         'count': len(urls),
-        'images': urls,
-        'photos': urls,
+        'images': images,
     })
 
 
@@ -370,13 +370,33 @@ def _extract_photos_fallback(url):
     Fetches the TikTok page HTML, parses embedded JSON state, and extracts image URLs.
     Returns a list of valid image URLs, or None on failure.
     """
+    desktop_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.tiktok.com/',
+    }
+    mobile_headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.tiktok.com/',
+    }
+
+    for headers in (desktop_headers, mobile_headers):
+        result = _try_extract_photos(url, headers)
+        if result:
+            return result
+
+    return None
+
+
+def _try_extract_photos(url, headers):
+    """
+    Attempt to extract photos from TikTok URL with given headers.
+    Returns a list of valid image URLs, or None on failure.
+    """
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.tiktok.com/',
-        }
         # Manually follow redirects to validate each hop's hostname (SSRF protection)
         current_url = url
         resp = None
@@ -448,7 +468,7 @@ def _extract_photos_fallback(url):
         app.logger.info('fallback: no JSON pattern matched for %s', url)
         return None
     except Exception as e:
-        app.logger.warning('_extract_photos_fallback failed: %s', e, exc_info=True)
+        app.logger.warning('_try_extract_photos failed: %s', e, exc_info=True)
         return None
 
 
@@ -548,6 +568,12 @@ def photos():
     if not _check_rate_limit(client_ip, _rate_store_photos):
         return jsonify({'success': False, 'error': 'Terlalu cepat, coba lagi beberapa saat'}), 429
 
+    # PRIMARY: Try custom fallback extractor first
+    fallback_photos = _extract_photos_fallback(url)
+    if fallback_photos:
+        return _make_fallback_photos_response(fallback_photos)
+
+    # SECONDARY: Fall back to yt-dlp if custom extractor returned nothing
     try:
         ydl_opts = {
             'quiet': True,
@@ -558,10 +584,6 @@ def photos():
             info = ydl.extract_info(url, download=False)
 
         if not info:
-            # yt-dlp returned nothing, try fallback
-            fallback_photos = _extract_photos_fallback(url)
-            if fallback_photos:
-                return _make_fallback_photos_response(fallback_photos)
             return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
 
         # Check if it's a slideshow/photo post
@@ -587,16 +609,12 @@ def photos():
                         photo_urls.append(fmt['url'])
 
         if not photo_urls:
-            # yt-dlp found no photos, try fallback
-            fallback_photos = _extract_photos_fallback(url)
-            if fallback_photos:
-                return _make_fallback_photos_response(fallback_photos)
             return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
 
+        images = [{'url': u, 'index': i + 1} for i, u in enumerate(photo_urls)]
         result = {
             'success': True,
-            'photos': photo_urls,
-            'images': photo_urls,
+            'images': images,
             'count': len(photo_urls),
         }
         if info.get('title'):
@@ -608,29 +626,10 @@ def photos():
 
         return jsonify(result)
 
-    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as e:
-        msg = str(e)
-        if 'Unsupported URL' in msg or 'unsupported url' in msg.lower():
-            # Try fallback before returning error
-            fallback_photos = _extract_photos_fallback(url)
-            if fallback_photos:
-                return _make_fallback_photos_response(fallback_photos)
-            return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
-        if 'Sign in' in msg or 'login' in msg.lower():
-            fallback_photos = _extract_photos_fallback(url)
-            if fallback_photos:
-                return _make_fallback_photos_response(fallback_photos)
-            return jsonify({'success': False, 'error': 'Konten ini memerlukan login TikTok'}), 400
-        fallback_photos = _extract_photos_fallback(url)
-        if fallback_photos:
-            return _make_fallback_photos_response(fallback_photos)
+    except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
         return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 400
     except Exception as e:
-        # General exception - try fallback before returning error
         app.logger.warning('/photos endpoint failed: %s', e, exc_info=True)
-        fallback_photos = _extract_photos_fallback(url)
-        if fallback_photos:
-            return _make_fallback_photos_response(fallback_photos)
         return jsonify({'success': False, 'error': 'PHOTO slideshow belum tersedia untuk link ini.'}), 502
 
 

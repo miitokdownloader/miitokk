@@ -15,7 +15,7 @@ async function fetchPhotos(url) {
       setStatus(data.error || 'Gagal mengambil foto.', 'err');
       return;
     }
-    const photos = data.images || data.photos || [];
+    const photos = (data.images || []).map(function(item) { return typeof item === 'string' ? item : item.url; });
     renderCarousel(photos, data.count || photos.length);
     // Show preview card with photo metadata if available
     if (data.title || data.uploader || data.thumbnail) {
@@ -64,6 +64,9 @@ function renderCarousel(photos, count) {
     img.src     = '/photo-proxy?url=' + encodeURIComponent(url);
     img.alt     = 'Photo ' + (i + 1);
     img.loading = 'lazy';
+    img.onerror = function() {
+      card.style.display = 'none';
+    };
     const footer = document.createElement('div');
     footer.className = 'photo-card-footer';
     const btn = document.createElement('button');
