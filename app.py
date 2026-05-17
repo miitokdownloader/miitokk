@@ -12,6 +12,13 @@ from urllib.parse import urlparse
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
+# Log ffmpeg availability at startup (works with both gunicorn and direct run)
+_ffmpeg_startup_path = shutil.which("ffmpeg")
+if _ffmpeg_startup_path:
+    print(f"[startup] ffmpeg found: {_ffmpeg_startup_path}", flush=True)
+else:
+    print("[startup] WARNING: ffmpeg NOT found. Video conversion will not work.", flush=True)
+
 # ---------------------------------------------------------------------------
 # Rate limiting
 # ---------------------------------------------------------------------------
@@ -220,7 +227,7 @@ def download():
         # Check ffmpeg availability
         ffmpeg_bin = shutil.which('ffmpeg')
         if not ffmpeg_bin:
-            return jsonify({'error': 'ffmpeg tidak tersedia di server. Hubungi admin.'}), 500
+            return jsonify({'error': 'Server belum support FFmpeg. Periksa nixpacks.toml dan redeploy.'}), 500
 
         # Step 1: Download raw video with yt-dlp
         raw_outtmpl = f"/tmp/{tmp_id}_raw.%(ext)s"
@@ -358,7 +365,7 @@ def photos():
                         photo_urls.append(fmt['url'])
 
         if not photo_urls:
-            return jsonify({'error': 'Ini bukan konten foto/slideshow. Gunakan tab BEST/1080P/720P untuk download video.'}), 400
+            return jsonify({'error': 'Foto tidak ditemukan atau link bukan slideshow.'}), 400
 
         result = {
             'photos': photo_urls,
