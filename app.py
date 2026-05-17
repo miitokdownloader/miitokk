@@ -117,31 +117,6 @@ def set_security_headers(response):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
-@app.route('/static/makima.mp4')
-def serve_video():
-    video_path = os.path.join(app.static_folder, 'video', 'makima.mp4')
-    if not os.path.exists(video_path):
-        return '', 404
-    file_size = os.path.getsize(video_path)
-    range_header = request.headers.get('Range', None)
-    if range_header:
-        try:
-            byte_start = int(range_header.replace('bytes=', '').split('-')[0])
-            byte_end = min(byte_start + 1024 * 1024, file_size - 1)
-            length = byte_end - byte_start + 1
-            with open(video_path, 'rb') as f:
-                f.seek(byte_start)
-                data = f.read(length)
-            rv = Response(data, 206, mimetype='video/mp4', direct_passthrough=True)
-            rv.headers.add('Content-Range', f'bytes {byte_start}-{byte_end}/{file_size}')
-            rv.headers.add('Accept-Ranges', 'bytes')
-            rv.headers.add('Content-Length', str(length))
-            return rv
-        except Exception:
-            pass
-    return send_file(video_path, mimetype='video/mp4')
-
-
 @app.route('/')
 def index():
     return render_template('index.html')

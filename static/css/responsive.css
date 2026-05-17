@@ -78,11 +78,10 @@
   .section-divider-line { max-width: 1000px; }
 }
 
-/* ── MOBILE BACKGROUND (video hidden, gradient bg) ─── */
+/* ── MOBILE BACKGROUND ─── */
 @media (max-width: 640px) {
-  .bg-video { display: none; }
-  body {
-    background: linear-gradient(160deg, #1a0000 0%, #0a0000 50%, #120000 100%);
+  .bg-video {
+    /* Keep video visible on mobile - most browsers support autoplay muted */
   }
 }
 

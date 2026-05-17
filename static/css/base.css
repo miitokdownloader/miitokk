@@ -15,12 +15,20 @@ body {
 
 body {
   font-family: var(--font-body);
-  background: var(--black);
+  background: linear-gradient(160deg, #1a0000 0%, #0a0000 50%, #120000 100%);
+  background-color: var(--black);
   color: var(--white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-user-select: none;
   user-select: none;
+}
+
+body.bg-fallback {
+  background-image: url('/static/img/background.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .url-input {
