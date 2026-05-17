@@ -217,7 +217,7 @@
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #c0c0c0;
+  color: var(--silver);
   background: rgba(20,0,0,0.5);
   border: 1px solid rgba(204,0,0,0.4);
   border-radius: 14px;
@@ -232,7 +232,7 @@
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #c0c0c0;
+  color: var(--silver);
   background: rgba(20,0,0,0.6);
   border: 1px solid rgba(204,0,0,0.5);
   border-radius: 14px;
