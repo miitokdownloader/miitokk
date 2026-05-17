@@ -214,14 +214,14 @@
 
 .quality-badge {
   font-family: var(--font-ui);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--silver);
-  background: rgba(204,0,0,0.1);
-  border: 1px solid rgba(204,0,0,0.3);
-  border-radius: 12px;
-  padding: 2px 8px;
+  background: rgba(20,0,0,0.5);
+  border: 1px solid rgba(204,0,0,0.4);
+  border-radius: 14px;
+  padding: 3px 10px;
 }
 
 .mp3-btn {
@@ -229,26 +229,47 @@
   align-items: center;
   gap: 4px;
   font-family: var(--font-ui);
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #f0d0d0;
-  background: rgba(139,0,0,0.3);
+  letter-spacing: 0.08em;
+  color: var(--silver);
+  background: rgba(20,0,0,0.6);
   border: 1px solid rgba(204,0,0,0.5);
-  border-radius: 8px;
-  padding: 3px 10px;
+  border-radius: 14px;
+  padding: 4px 10px;
   cursor: pointer;
   transition: all var(--duration-fast);
 }
 
 .mp3-btn:hover {
-  background: rgba(204,0,0,0.4);
-  box-shadow: 0 0 8px rgba(204,0,0,0.4);
+  background: rgba(204,0,0,0.3);
+  box-shadow: 0 0 10px rgba(204,0,0,0.5);
   color: var(--white);
 }
 
 .mp3-btn svg {
   flex-shrink: 0;
+  filter: drop-shadow(0 0 3px rgba(204,0,0,0.7));
+}
+
+.mp3-btn.loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.mp3-btn.loading::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(204,0,0,0.2);
+  border-top-color: #cc0000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.mp3-btn.loading svg {
+  display: none;
 }
 
 /* ── THUMBNAIL FALLBACK ───────────────────────── */
