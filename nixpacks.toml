@@ -1,5 +1,6 @@
+# Fallback 1: Set Railway variable NIXPACKS_PKGS=ffmpeg if aptPkgs below doesn't work
 [phases.setup]
-nixPkgs = ["python311", "ffmpeg"]
+aptPkgs = ["ffmpeg"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
