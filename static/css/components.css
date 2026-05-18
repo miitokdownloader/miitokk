@@ -57,7 +57,7 @@
   font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.12em;
-  padding: 9px 20px;
+  padding: 9px 0;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(204,0,0,0.3);
   background: transparent;
@@ -66,7 +66,10 @@
   transition: all var(--duration-fast);
   outline: none;
   min-width: unset;
+  width: 100%;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .q-btn:hover {
@@ -87,6 +90,7 @@
 .input-wrap {
   position: relative;
   margin-bottom: 8px;
+  max-width: 100%;
 }
 
 .url-input {
@@ -104,6 +108,7 @@
   outline: none;
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
   caret-color: var(--red);
+  box-sizing: border-box;
 }
 
 .url-input::placeholder {
@@ -165,6 +170,7 @@
   border: 1px solid rgba(204,0,0,0.18);
   border-radius: 10px;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .preview-card.show {
@@ -810,16 +816,20 @@ img.preview-thumb-fallback {
 .features-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .feature-card {
   background: rgba(0,0,0,0.45);
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
-  padding: 10px 8px;
+  padding: 10px 6px;
   text-align: center;
   transition: all var(--duration-normal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .feature-card.cyber-badge:hover {
@@ -832,23 +842,24 @@ img.preview-thumb-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   color: var(--red);
   filter: drop-shadow(0 0 4px rgba(204,0,0,0.4));
 }
 
 .feature-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .feature-title {
   font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
   color: var(--red);
   margin-bottom: 0;
+  white-space: nowrap;
 }
 
 /* -- STATS SECTION -- */
@@ -1178,6 +1189,7 @@ img.preview-thumb-fallback {
   width: 92%;
   max-width: 520px;
   animation: fadeScale 0.3s ease-out;
+  overflow-x: hidden;
 }
 
 /* -- STORE PAGE -- */
