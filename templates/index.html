@@ -251,10 +251,14 @@
         </button>
       </div>
 
-      <!-- Spinner -->
+      <!-- Progress -->
       <div class="spinner-wrap" id="spinnerWrap">
-        <div class="spinner"></div>
-        <div class="spinner-label" id="spinnerLabel">MEMPROSES&hellip;</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
       </div>
 
       <!-- Status -->
@@ -307,7 +311,7 @@
 
     <section class="stats-section">
       <div class="stats-header">
-        <div class="stats-title-main control-flicker">CONTROL PANEL</div>
+        <div class="stats-title-main">CONTROL PANEL</div>
         <div class="stats-title-sub">MII NETWORK SYSTEM</div>
       </div>
       <div class="control-badge">

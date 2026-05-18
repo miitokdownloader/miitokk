@@ -1,5 +1,26 @@
 /* ── DOWNLOADER ────────────────────────────────── */
 
+function showProgress(percent) {
+  var wrap = document.getElementById('spinnerWrap');
+  if (!wrap) return;
+  wrap.classList.add('show');
+  var existing = wrap.querySelector('.progress-bar-wrap');
+  if (!existing) {
+    wrap.innerHTML = '<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">0%</div></div>';
+  }
+  var fill = document.getElementById('progressFill');
+  var text = document.getElementById('progressText');
+  if (fill) fill.style.width = percent + '%';
+  if (text) text.textContent = percent + '%';
+}
+
+function hideProgress() {
+  var wrap = document.getElementById('spinnerWrap');
+  if (!wrap) return;
+  wrap.classList.remove('show');
+  wrap.innerHTML = '<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">0%</div></div>';
+}
+
 async function fetchPreview(url) {
   try {
     const fd = new FormData();
@@ -46,6 +67,18 @@ async function downloadAudio() {
   if (mp3Btn) mp3Btn.classList.add('loading');
   setStatus('', '');
 
+  showProgress(0);
+  var audioProgressInterval = setInterval(function() {
+    var fill = document.getElementById('progressFill');
+    if (!fill) return;
+    var current = parseInt(fill.style.width) || 0;
+    if (current < 90) {
+      var next = current + Math.floor(Math.random() * 8) + 2;
+      if (next > 90) next = 90;
+      showProgress(next);
+    }
+  }, 300);
+
   try {
     const response = await fetch('/download-audio', {
       method: 'POST',
@@ -74,12 +107,17 @@ async function downloadAudio() {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     }, 1000);
+    clearInterval(audioProgressInterval);
+    showProgress(100);
     setStatus('Audio download berhasil!', 'ok');
   } catch(e) {
+    clearInterval(audioProgressInterval);
     setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
   } finally {
     isDownloadingAudio = false;
     if (mp3Btn) mp3Btn.classList.remove('loading');
+    clearInterval(audioProgressInterval);
+    setTimeout(function() { hideProgress(); }, 400);
   }
 }
 
@@ -151,12 +189,19 @@ async function confirmDownload() {
   isDownloading = true;
   const btn = document.getElementById('dlBtn');
   btn.disabled = true;
-  document.getElementById('spinnerWrap').classList.add('show');
-  const spinnerLabel = document.getElementById('spinnerLabel');
-  if (spinnerLabel) {
-    spinnerLabel.textContent = '> LINK DETECTED\n> QUALITY: ' + (qualityLabel[selectedQuality] || 'BEST') + '\n> CONVERTING MP4\u2026';
-  }
   setStatus('', '');
+
+  showProgress(0);
+  var progressInterval = setInterval(function() {
+    var fill = document.getElementById('progressFill');
+    if (!fill) return;
+    var current = parseInt(fill.style.width) || 0;
+    if (current < 90) {
+      var next = current + Math.floor(Math.random() * 8) + 2;
+      if (next > 90) next = 90;
+      showProgress(next);
+    }
+  }, 300);
 
   try {
     const formData = new FormData();
@@ -194,16 +239,18 @@ async function confirmDownload() {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     }, 1000);
+    clearInterval(progressInterval);
+    showProgress(100);
     setStatus('Download berhasil!', 'ok');
     trackEvent('download_success');
 
   } catch(e) {
+    clearInterval(progressInterval);
     setStatus('Terjadi kesalahan, coba lagi.', 'err');
   } finally {
     isDownloading = false;
     btn.disabled = false;
-    document.getElementById('spinnerWrap').classList.remove('show');
-    const spinnerLabelEl = document.getElementById('spinnerLabel');
-    if (spinnerLabelEl) spinnerLabelEl.textContent = 'MEMPROSES\u2026';
+    clearInterval(progressInterval);
+    setTimeout(function() { hideProgress(); }, 400);
   }
 }
