@@ -113,6 +113,6 @@
   .hero-title::after { display: none; }
 }
 
-/* ── No horizontal overflow safeguard ─── */
+/* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
 html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
 .page { overflow-x: hidden; max-width: 100%; }
