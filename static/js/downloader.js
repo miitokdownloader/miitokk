@@ -54,7 +54,13 @@ async function fetchPreview(url) {
   } catch(e) {}
 }
 
-async function downloadAudio() {
+/* ── AUDIO DOWNLOAD (MP3 button only) ─────────── */
+
+function handleAudioDownload(event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
   if (isDownloadingAudio) return;
   const url = document.getElementById('urlInput').value.trim();
   if (!url) {
@@ -62,61 +68,65 @@ async function downloadAudio() {
     return;
   }
   isDownloadingAudio = true;
-  const mp3Btn = document.querySelector('.mp3-btn');
+  var mp3Btn = document.getElementById('mp3Btn');
   if (mp3Btn) mp3Btn.classList.add('loading');
   setStatus('', '');
 
-  showProgress(0);
+  // Use a local fake progress that only shows on the MP3 button text
+  var audioPercent = 0;
   var audioProgressInterval = setInterval(function() {
-    var fill = document.getElementById('progressFill');
-    if (!fill) return;
-    var current = parseInt(fill.style.width) || 0;
-    if (current < 90) {
-      var next = current + Math.floor(Math.random() * 8) + 2;
-      if (next > 90) next = 90;
-      showProgress(next);
+    if (audioPercent < 90) {
+      audioPercent += Math.floor(Math.random() * 8) + 2;
+      if (audioPercent > 90) audioPercent = 90;
+      if (mp3Btn) mp3Btn.textContent = audioPercent + '%';
     }
   }, 300);
 
-  try {
-    const response = await fetch('/download-audio', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url })
-    });
-
+  fetch('/download-audio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: url })
+  }).then(function(response) {
     if (!response.ok) {
-      let errMsg = 'Audio belum bisa diproses. Coba video lain.';
-      try {
-        const errData = await response.json();
-        if (errData.error) errMsg = errData.error;
-      } catch(e) {}
-      setStatus(errMsg, 'err');
-      hideProgress();
-      return;
+      return response.json().then(function(errData) {
+        throw new Error(errData.error || 'Audio belum bisa diproses. Coba video lain.');
+      }).catch(function(e) {
+        if (e.message) throw e;
+        throw new Error('Audio belum bisa diproses. Coba video lain.');
+      });
     }
-
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    return response.blob();
+  }).then(function(blob) {
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
     a.href = blobUrl;
     a.download = 'miitok_audio.mp3';
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => {
+    setTimeout(function() {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     }, 1000);
-    showProgress(100);
+    if (mp3Btn) mp3Btn.textContent = '100%';
     setStatus('Audio download berhasil!', 'ok');
-  } catch(e) {
-    setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
-  } finally {
+  }).catch(function(e) {
+    setStatus(e.message || 'Audio belum bisa diproses. Coba video lain.', 'err');
+  }).finally(function() {
     isDownloadingAudio = false;
-    if (mp3Btn) mp3Btn.classList.remove('loading');
     clearInterval(audioProgressInterval);
-    setTimeout(function() { hideProgress(); }, 600);
-  }
+    setTimeout(function() {
+      if (mp3Btn) {
+        mp3Btn.classList.remove('loading');
+        mp3Btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> MP3';
+      }
+    }, 600);
+  });
+}
+
+/* ── VIDEO DOWNLOAD (DOWNLOAD button only) ────── */
+
+function handleVideoDownload() {
+  openModal();
 }
 
 function openModal() {

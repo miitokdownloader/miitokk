@@ -235,7 +235,7 @@
           </div>
           <div class="preview-actions">
             <span class="quality-badge" id="qualityBadge">BEST</span>
-            <button class="mp3-btn" onclick="downloadAudio()" title="Download MP3">
+            <button type="button" class="mp3-btn" id="mp3Btn" onclick="handleAudioDownload(event)" title="Download MP3">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               MP3
             </button>
@@ -245,7 +245,7 @@
 
       <!-- Download button -->
       <div class="dl-wrap" id="dlWrap">
-        <button class="dl-btn" id="dlBtn" onclick="openModal()">
+        <button class="dl-btn" id="dlBtn" onclick="handleVideoDownload()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           DOWNLOAD
         </button>
