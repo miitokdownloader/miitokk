@@ -99,7 +99,8 @@
   .server-online-dot,
   .stat-value,
   .stats-title-main,
-  .spinner-label {
+  .spinner-label,
+  .touch-orb {
     animation: none;
   }
 

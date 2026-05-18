@@ -70,6 +70,9 @@
 (function() {
   'use strict';
 
+  // Respect reduced-motion preference
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
   var MAX_ORBS = 12;
   var orbContainer = document.getElementById('orbContainer');
   if (!orbContainer) return;
@@ -106,6 +109,7 @@
   }
 
   document.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
     createOrb(e.clientX, e.clientY, false);
   });
 
@@ -126,7 +130,7 @@
 
   document.addEventListener('mousemove', function(e) {
     var now = Date.now();
-    if (now - lastMouseMove < 100) return;
+    if (now - lastMouseMove < 200) return;
     lastMouseMove = now;
     createOrb(e.clientX, e.clientY, true);
   });

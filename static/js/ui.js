@@ -101,6 +101,8 @@ function hidePreview() {
     if (features) features.style.display = 'none';
     if (stats) stats.style.display = 'none';
     if (social) social.style.display = 'none';
+
+    window.location.hash = '#coming-soon';
   }
 
   function showMainView() {
@@ -115,11 +117,22 @@ function hidePreview() {
     if (features) features.style.display = '';
     if (stats) stats.style.display = '';
     if (social) social.style.display = '';
+
+    if (window.location.hash === '#coming-soon') {
+      history.replaceState(null, '', window.location.pathname);
+    }
   }
 
   // Expose globally
   window.showComingSoon = showComingSoon;
   window.showMainView = showMainView;
+
+  // Handle browser back button
+  window.addEventListener('hashchange', function() {
+    if (window.location.hash !== '#coming-soon') {
+      showMainView();
+    }
+  });
 
   // Wire up drawer items
   var drawerItems = document.querySelectorAll('.side-drawer .drawer-item');
