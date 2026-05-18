@@ -65,3 +65,73 @@
     initStatsObserver();
   }
 })();
+
+/* ── INTERACTIVE ORBS ─────────────────────────── */
+(function() {
+  'use strict';
+
+  // Respect reduced-motion preference
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var MAX_ORBS = 12;
+  var orbContainer = document.getElementById('orbContainer');
+  if (!orbContainer) return;
+
+  var activeOrbs = [];
+  var lastTouchMove = 0;
+  var lastMouseMove = 0;
+
+  function createOrb(x, y, isSmall) {
+    var orb = document.createElement('div');
+    orb.className = 'touch-orb' + (isSmall ? ' orb-small' : '');
+    var size = isSmall ? 40 : 80;
+    orb.style.left = (x - size / 2) + 'px';
+    orb.style.top = (y - size / 2) + 'px';
+    orbContainer.appendChild(orb);
+    activeOrbs.push(orb);
+
+    if (activeOrbs.length > MAX_ORBS) {
+      var oldest = activeOrbs.shift();
+      if (oldest.parentNode) {
+        oldest.parentNode.removeChild(oldest);
+      }
+    }
+
+    setTimeout(function() {
+      if (orb.parentNode) {
+        orb.parentNode.removeChild(orb);
+      }
+      var idx = activeOrbs.indexOf(orb);
+      if (idx > -1) {
+        activeOrbs.splice(idx, 1);
+      }
+    }, 800);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
+    createOrb(e.clientX, e.clientY, false);
+  });
+
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches && e.touches.length > 0) {
+      createOrb(e.touches[0].clientX, e.touches[0].clientY, false);
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    var now = Date.now();
+    if (now - lastTouchMove < 50) return;
+    lastTouchMove = now;
+    if (e.touches && e.touches.length > 0) {
+      createOrb(e.touches[0].clientX, e.touches[0].clientY, false);
+    }
+  }, { passive: true });
+
+  document.addEventListener('mousemove', function(e) {
+    var now = Date.now();
+    if (now - lastMouseMove < 200) return;
+    lastMouseMove = now;
+    createOrb(e.clientX, e.clientY, true);
+  });
+})();

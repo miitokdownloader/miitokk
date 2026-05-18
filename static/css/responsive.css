@@ -85,10 +85,10 @@
   .section-divider-line { max-width: 1000px; }
 }
 
-/* ── MOBILE BACKGROUND ─── */
+/* ── MOBILE RESPONSIVE ─── */
 @media (max-width: 640px) {
-  .bg-video {
-    /* Keep video visible on mobile - most browsers support autoplay muted */
+  .coming-soon-section {
+    max-width: 100%;
   }
 }
 

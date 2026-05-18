@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="preload" href="/static/video/makima.mp4" as="video" type="video/mp4">
+
   <link rel="stylesheet" href="/static/css/variables.css">
   <link rel="stylesheet" href="/static/css/base.css">
   <link rel="stylesheet" href="/static/css/layout.css">
@@ -18,27 +18,9 @@
 </head>
 <body>
 
-  <!-- Background Video -->
-  <video class="bg-video" id="bgVideo" autoplay loop muted playsinline preload="auto">
-    <source src="/static/video/makima.mp4" type="video/mp4">
-  </video>
-  <script>
-    (function() {
-      var v = document.getElementById('bgVideo');
-      if (v) {
-        v.addEventListener('error', function() {
-          v.style.display = 'none';
-          document.body.classList.add('bg-fallback');
-        }, true);
-        v.querySelector('source').addEventListener('error', function() {
-          v.style.display = 'none';
-          document.body.classList.add('bg-fallback');
-        });
-      }
-    })();
-  </script>
   <div class="bg-overlay"></div>
   <div class="bg-vignette"></div>
+  <div id="orbContainer" class="orb-container"></div>
 
   <!-- Top Navbar -->
   <nav class="top-nav">
@@ -295,6 +277,17 @@
       </div>
 
     </div><!-- /card -->
+
+    <!-- Coming Soon Section -->
+    <section class="coming-soon-section" id="comingSoonSection">
+      <div class="coming-soon-card">
+        <div class="coming-soon-scanline"></div>
+        <h2 class="coming-soon-title" id="comingSoonTitle">FEATURE</h2>
+        <span class="coming-soon-badge">COMING SOON</span>
+        <p class="coming-soon-subtitle">This feature is under development.</p>
+        <button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>
+      </div>
+    </section>
 
     <!-- Features -->
     <section class="features-section">
