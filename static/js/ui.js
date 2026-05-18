@@ -1,7 +1,7 @@
 /* ── UI HELPERS ────────────────────────────────── */
 
 function setStatus(msg, type) {
-  const el = document.getElementById('status');
+  var el = document.getElementById('status');
   el.textContent = msg;
   el.className = 'status' + (type ? ' ' + type : '');
 }
@@ -11,30 +11,59 @@ function hidePreview() {
   document.getElementById('previewCard').classList.remove('show');
 }
 
-/* ── NAVBAR HAMBURGER ─────────────────────────── */
-/* Supports nav-menu-header and nav-menu-status elements inside .nav-menu */
+/* ── SIDE DRAWER ──────────────────────────────── */
 (function() {
-  const btn  = document.getElementById('hamburgerBtn');
-  const menu = document.getElementById('navMenu');
-  if (!btn || !menu) return;
+  var btn = document.getElementById('hamburgerBtn');
+  var drawer = document.getElementById('sideDrawer');
+  var overlay = document.getElementById('drawerOverlay');
+  var closeBtn = document.getElementById('drawerClose');
+
+  if (!btn || !drawer || !overlay) return;
+
+  function openDrawer() {
+    drawer.classList.add('active');
+    overlay.classList.add('active');
+    drawer.setAttribute('aria-hidden', 'false');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('active');
+    overlay.classList.remove('active');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
 
   btn.addEventListener('click', function(e) {
     e.stopPropagation();
-    const isOpen = menu.classList.toggle('open');
-    btn.classList.toggle('active', isOpen);
+    openDrawer();
   });
 
-  document.addEventListener('click', function(e) {
-    if (!menu.contains(e.target) && e.target !== btn) {
-      menu.classList.remove('open');
-      btn.classList.remove('active');
-    }
+  overlay.addEventListener('click', function() {
+    closeDrawer();
   });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      closeDrawer();
+    });
+  }
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      menu.classList.remove('open');
-      btn.classList.remove('active');
+    if (e.key === 'Escape' && drawer.classList.contains('active')) {
+      closeDrawer();
     }
   });
+
+  // Update downloads counter in drawer if statDownloads exists
+  var statDl = document.getElementById('statDownloads');
+  var drawerDl = document.getElementById('drawerDownloads');
+  if (statDl && drawerDl) {
+    var observer = new MutationObserver(function() {
+      drawerDl.textContent = 'Downloads: ' + (statDl.textContent || '0');
+    });
+    observer.observe(statDl, { childList: true, characterData: true, subtree: true });
+  }
 })();
