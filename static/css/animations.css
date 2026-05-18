@@ -34,27 +34,14 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-@keyframes controlFlicker {
-  0%, 92%, 100% { opacity: 1; }
-  93% { opacity: 0.4; }
-  95% { opacity: 1; }
-  96% { opacity: 0.3; }
-  98% { opacity: 1; }
-}
-
 @keyframes hudPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 @keyframes counterGlow {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.4; }
 }
 
 @keyframes hudFadeIn {
@@ -63,12 +50,10 @@
 }
 
 @keyframes glitch {
-  0%, 90%, 100% { transform: translate(0); opacity: 1; }
-  91% { transform: translate(-2px, 1px); opacity: 0.8; }
-  92% { transform: translate(2px, -1px); opacity: 0.9; }
-  93% { transform: translate(-1px, 0); opacity: 1; }
-  94% { transform: translate(1px, 1px); opacity: 0.85; }
-  95% { transform: translate(0); opacity: 1; }
+  0%, 95% { transform: translate(0); opacity: 1; }
+  96% { transform: translate(-2px, 1px); opacity: 0.8; }
+  97% { transform: translate(2px, -1px); opacity: 0.9; }
+  100% { transform: translate(0); opacity: 1; }
 }
 
 @keyframes titleScanline {
@@ -92,19 +77,19 @@
   100% { transform: scale(1.2); opacity: 0; }
 }
 
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* ── REDUCED MOTION ───────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .stats-scanline,
   .control-badge-dot,
   .server-online-dot,
   .stat-value,
   .stats-title-main,
   .spinner-label,
   .touch-orb {
-    animation: none;
-  }
-
-  .control-flicker {
     animation: none;
   }
 
