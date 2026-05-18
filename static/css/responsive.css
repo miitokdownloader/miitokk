@@ -114,11 +114,5 @@
 }
 
 /* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
-/* Card children overflow protection */
-.card > * {
-  max-width: 100%;
-  min-width: 0;
-}
-
 html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
 .page { overflow-x: hidden; max-width: 100%; }
