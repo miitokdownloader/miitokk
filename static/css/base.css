@@ -61,12 +61,12 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(204,0,0,0.6) 0%, rgba(139,0,0,0.3) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(220,20,60,0.7) 0%, rgba(178,34,34,0.4) 35%, rgba(139,0,0,0.2) 55%, transparent 70%);
   pointer-events: none;
   transform: scale(0);
   opacity: 1;
   will-change: transform, opacity;
-  animation: orbFadeOut 0.8s ease-out forwards;
+  animation: orbFadeOut 0.75s ease-out forwards;
 }
 
 .touch-orb.orb-small {

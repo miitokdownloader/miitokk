@@ -863,7 +863,7 @@ img.preview-thumb-fallback {
   font-size: 0.72rem;
   letter-spacing: 0.18em;
   color: var(--red);
-  margin-bottom: 3px;
+  margin-bottom: 0;
 }
 
 .feature-desc {
