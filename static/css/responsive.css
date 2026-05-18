@@ -4,7 +4,7 @@
 @media (max-width: 380px) {
   .hero-title { font-size: 2.2rem; }
   .card { padding: 18px 14px 22px; }
-  .q-btn { padding: 7px 12px; font-size: 0.75rem; min-width: 60px; }
+  .q-btn { padding: 7px 12px; font-size: 0.75rem; }
   .nav-brand { font-size: 1.2rem; }
   .mp3-btn { font-size: 0.55rem; padding: 2px 8px; }
   .quality-badge { font-size: 0.55rem; padding: 2px 6px; }
@@ -113,6 +113,6 @@
   .hero-title::after { display: none; }
 }
 
-/* ── No horizontal overflow safeguard ─── */
-html, body { overflow-x: hidden; }
-.page { overflow-x: hidden; max-width: 100vw; }
+/* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
+html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+.page { overflow-x: hidden; max-width: 100%; }

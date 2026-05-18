@@ -4,10 +4,6 @@ function showProgress(percent) {
   var wrap = document.getElementById('spinnerWrap');
   if (!wrap) return;
   wrap.classList.add('show');
-  var existing = wrap.querySelector('.progress-bar-wrap');
-  if (!existing) {
-    wrap.innerHTML = '<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">0%</div></div>';
-  }
   var fill = document.getElementById('progressFill');
   var text = document.getElementById('progressText');
   if (fill) fill.style.width = percent + '%';
@@ -18,7 +14,10 @@ function hideProgress() {
   var wrap = document.getElementById('spinnerWrap');
   if (!wrap) return;
   wrap.classList.remove('show');
-  wrap.innerHTML = '<div class="progress-bar-wrap"><div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div><div class="progress-text" id="progressText">0%</div></div>';
+  var fill = document.getElementById('progressFill');
+  var text = document.getElementById('progressText');
+  if (fill) fill.style.width = '0%';
+  if (text) text.textContent = '0%';
 }
 
 async function fetchPreview(url) {
@@ -79,13 +78,6 @@ async function downloadAudio() {
     }
   }, 300);
 
-  var stallTimeout = setTimeout(function() {
-    var text = document.getElementById('progressText');
-    if (text && document.getElementById('spinnerWrap').classList.contains('show')) {
-      text.textContent = '90% ...';
-    }
-  }, 20000);
-
   try {
     const response = await fetch('/download-audio', {
       method: 'POST',
@@ -100,6 +92,7 @@ async function downloadAudio() {
         if (errData.error) errMsg = errData.error;
       } catch(e) {}
       setStatus(errMsg, 'err');
+      hideProgress();
       return;
     }
 
@@ -122,8 +115,7 @@ async function downloadAudio() {
     isDownloadingAudio = false;
     if (mp3Btn) mp3Btn.classList.remove('loading');
     clearInterval(audioProgressInterval);
-    clearTimeout(stallTimeout);
-    setTimeout(function() { hideProgress(); }, 400);
+    setTimeout(function() { hideProgress(); }, 600);
   }
 }
 
@@ -209,13 +201,6 @@ async function confirmDownload() {
     }
   }, 300);
 
-  var stallTimeout = setTimeout(function() {
-    var text = document.getElementById('progressText');
-    if (text && document.getElementById('spinnerWrap').classList.contains('show')) {
-      text.textContent = '90% ...';
-    }
-  }, 20000);
-
   try {
     const formData = new FormData();
     formData.append('url', url);
@@ -233,6 +218,7 @@ async function confirmDownload() {
         if (errData.error) errMsg = errData.error;
       } catch(e) {}
       setStatus(errMsg, 'err');
+      hideProgress();
       return;
     }
 
@@ -262,7 +248,6 @@ async function confirmDownload() {
     isDownloading = false;
     btn.disabled = false;
     clearInterval(progressInterval);
-    clearTimeout(stallTimeout);
-    setTimeout(function() { hideProgress(); }, 400);
+    setTimeout(function() { hideProgress(); }, 600);
   }
 }
