@@ -77,7 +77,7 @@ function hidePreview() {
 
   var comingSoonFeatures = {
     'MP3 Downloader': true,
-    'Photo Downloader': false,
+    'Photo Downloader': true,
     'HD Converter': true,
     'Caption Copier': true,
     'Control Panel': true,
@@ -90,33 +90,41 @@ function hidePreview() {
   function showComingSoon(title) {
     var section = document.getElementById('comingSoonSection');
     var titleEl = document.getElementById('comingSoonTitle');
+    var header = document.querySelector('.header');
     var card = document.querySelector('.card');
     var features = document.querySelector('.features-section');
     var stats = document.querySelector('.stats-section');
     var social = document.querySelector('.social-section');
+    var footer = document.querySelector('.footer-wrap');
 
     if (titleEl) titleEl.textContent = title.toUpperCase();
     if (section) { section.style.display = 'block'; }
+    if (header) header.style.display = 'none';
     if (card) card.style.display = 'none';
     if (features) features.style.display = 'none';
     if (stats) stats.style.display = 'none';
     if (social) social.style.display = 'none';
+    if (footer) footer.style.display = 'none';
 
     window.location.hash = '#coming-soon';
   }
 
   function showMainView() {
     var section = document.getElementById('comingSoonSection');
+    var header = document.querySelector('.header');
     var card = document.querySelector('.card');
     var features = document.querySelector('.features-section');
     var stats = document.querySelector('.stats-section');
     var social = document.querySelector('.social-section');
+    var footer = document.querySelector('.footer-wrap');
 
     if (section) section.style.display = 'none';
+    if (header) header.style.display = '';
     if (card) card.style.display = '';
     if (features) features.style.display = '';
     if (stats) stats.style.display = '';
     if (social) social.style.display = '';
+    if (footer) footer.style.display = '';
 
     if (window.location.hash === '#coming-soon') {
       history.replaceState(null, '', window.location.pathname);

@@ -137,7 +137,7 @@
     <div class="drawer-hud-card">
       <div class="drawer-hud-grid">
         <div class="drawer-hud-item">
-          <span class="drawer-hud-dot green"></span>
+          <span class="drawer-hud-dot silver"></span>
           <span class="drawer-hud-label">Video Ready</span>
         </div>
         <div class="drawer-hud-item">
@@ -149,7 +149,7 @@
           <span class="drawer-hud-label">MP3 Soon</span>
         </div>
         <div class="drawer-hud-item">
-          <span class="drawer-hud-dot green"></span>
+          <span class="drawer-hud-dot silver"></span>
           <span class="drawer-hud-label" id="drawerDownloads">Downloads: 0</span>
         </div>
       </div>
@@ -281,11 +281,17 @@
     <!-- Coming Soon Section -->
     <section class="coming-soon-section" id="comingSoonSection">
       <div class="coming-soon-card">
+        <div class="coming-soon-glow-line"></div>
+        <div class="coming-soon-corner-tr"></div>
+        <div class="coming-soon-corner-bl"></div>
         <div class="coming-soon-scanline"></div>
         <h2 class="coming-soon-title" id="comingSoonTitle">FEATURE</h2>
         <span class="coming-soon-badge">COMING SOON</span>
         <p class="coming-soon-subtitle">This feature is under development.</p>
-        <button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>
+        <button class="coming-soon-btn" onclick="showMainView()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+          BACK TO DOWNLOADER
+        </button>
       </div>
     </section>
 
