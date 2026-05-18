@@ -48,6 +48,9 @@
   .modal-handle { display: none; }
   .photo-card { flex: 0 0 260px; }
   .arrow-btn { display: flex; }
+  .view-container { max-width: 680px; }
+  .store-grid { gap: 14px; }
+  .control-grid { gap: 12px; }
 }
 
 /* ── Desktop ─── */
@@ -68,6 +71,7 @@
   .social-btn svg { width: 26px; height: 26px; }
   .footer-wrap { max-width: 800px; }
   .section-divider-line { max-width: 800px; }
+  .view-container { max-width: 800px; }
 }
 
 /* ── Large Desktop ─── */
@@ -83,11 +87,12 @@
   .social-section { max-width: 1000px; }
   .footer-wrap { max-width: 1000px; }
   .section-divider-line { max-width: 1000px; }
+  .view-container { max-width: 1000px; }
 }
 
 /* ── MOBILE RESPONSIVE ─── */
 @media (max-width: 640px) {
-  .coming-soon-section {
+  .view-container {
     max-width: 100%;
   }
 }

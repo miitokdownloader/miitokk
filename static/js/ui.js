@@ -71,88 +71,226 @@ function hidePreview() {
   }
 })();
 
-/* ── DRAWER NAVIGATION ────────────────────────── */
+/* -- VIEW NAVIGATION SYSTEM -- */
 (function() {
   'use strict';
 
-  var comingSoonFeatures = {
-    'MP3 Downloader': true,
-    'Photo Downloader': false,
-    'HD Converter': true,
-    'Caption Copier': true,
-    'Control Panel': true,
-    'Server Status': true,
-    'How To Use': true,
-    'Report Bug': true,
-    'Dashboard': true
+  // View configuration
+  var viewConfig = {
+    'downloader': { type: 'main' },
+    'mp3': { type: 'coming-soon', title: 'MP3 DOWNLOADER', badge: 'COMING SOON', description: 'Audio downloader is under development.' },
+    'photo': { type: 'coming-soon', title: 'PHOTO DOWNLOADER', badge: 'BETA', description: 'TikTok photo slideshow support is under development.' },
+    'hd-converter': { type: 'coming-soon', title: 'HD CONVERTER', badge: 'COMING SOON', description: 'Video converter is under development.' },
+    'caption': { type: 'coming-soon', title: 'CAPTION COPIER', badge: 'COMING SOON', description: 'Caption copy tool is under development.' },
+    'store': { type: 'store' },
+    'control': { type: 'control' },
+    'server': { type: 'coming-soon', title: 'SERVER STATUS', badge: 'COMING SOON', description: 'Server monitoring dashboard is under development.' },
+    'howto': { type: 'coming-soon', title: 'HOW TO USE', badge: 'COMING SOON', description: 'Usage guide is under development.' },
+    'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'Bug reporting system is under development.' }
   };
 
-  function showComingSoon(title) {
-    var section = document.getElementById('comingSoonSection');
-    var titleEl = document.getElementById('comingSoonTitle');
-    var card = document.querySelector('.card');
-    var features = document.querySelector('.features-section');
-    var stats = document.querySelector('.stats-section');
-    var social = document.querySelector('.social-section');
+  function navigateTo(view, skipPush) {
+    if (!viewConfig[view]) return;
+    var previousView = currentView;
+    currentView = view;
 
-    if (titleEl) titleEl.textContent = title.toUpperCase();
-    if (section) { section.style.display = 'block'; }
-    if (card) card.style.display = 'none';
-    if (features) features.style.display = 'none';
-    if (stats) stats.style.display = 'none';
-    if (social) social.style.display = 'none';
+    // Hide all views
+    var viewDownloader = document.getElementById('viewDownloader');
+    var viewComingSoon = document.getElementById('viewComingSoon');
+    var viewStore = document.getElementById('viewStore');
+    var viewControl = document.getElementById('viewControl');
 
-    window.location.hash = '#coming-soon';
+    if (viewDownloader) viewDownloader.style.display = 'none';
+    if (viewComingSoon) viewComingSoon.style.display = 'none';
+    if (viewStore) viewStore.style.display = 'none';
+    if (viewControl) viewControl.style.display = 'none';
+
+    // Disconnect control panel observer when leaving control view
+    if (previousView === 'control' && view !== 'control') {
+      disconnectControlObservers();
+    }
+
+    var config = viewConfig[view];
+
+    if (config.type === 'main') {
+      if (viewDownloader) viewDownloader.style.display = '';
+    } else if (config.type === 'coming-soon') {
+      renderComingSoon(config.title, config.badge, config.description);
+      if (viewComingSoon) viewComingSoon.style.display = '';
+    } else if (config.type === 'store') {
+      renderStore();
+      if (viewStore) viewStore.style.display = '';
+    } else if (config.type === 'control') {
+      renderControl();
+      if (viewControl) viewControl.style.display = '';
+    }
+
+    // Push history state when navigating away from downloader
+    if (!skipPush && view !== 'downloader') {
+      history.pushState({ view: view }, '', '');
+    }
+
+    // Update active state in drawer
+    updateDrawerActive(view);
+
+    // Close drawer
+    if (window._closeDrawer) window._closeDrawer();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+  }
+
+  function renderComingSoon(title, badge, description) {
+    var container = document.getElementById('viewComingSoon');
+    if (!container) return;
+    container.innerHTML = '<div class="coming-soon-card">' +
+      '<div class="coming-soon-scanline"></div>' +
+      '<div class="coming-soon-corner tl"></div>' +
+      '<div class="coming-soon-corner tr"></div>' +
+      '<div class="coming-soon-corner bl"></div>' +
+      '<div class="coming-soon-corner br"></div>' +
+      '<h2 class="coming-soon-title"></h2>' +
+      '<span class="coming-soon-badge"></span>' +
+      '<p class="coming-soon-subtitle"></p>' +
+      '<button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>' +
+      '</div>';
+    // Use textContent to avoid XSS from any future dynamic values
+    container.querySelector('.coming-soon-title').textContent = title;
+    container.querySelector('.coming-soon-badge').textContent = badge;
+    container.querySelector('.coming-soon-subtitle').textContent = description;
+  }
+
+  function renderStore() {
+    var container = document.getElementById('viewStore');
+    if (!container) return;
+    container.innerHTML = '<div class="store-page">' +
+      '<div class="store-header">' +
+        '<h2 class="store-title">PREMIUM APPS STORE</h2>' +
+        '<p class="store-subtitle">MII NETWORK digital products</p>' +
+      '</div>' +
+      '<div class="store-grid">' +
+        '<a href="https://www.instagram.com/miistore.99?igsh=ZmFqanZuOXo4cG92" target="_blank" rel="noopener noreferrer" class="store-card">' +
+          '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></div>' +
+          '<div class="store-card-title">Instagram</div>' +
+          '<div class="store-card-desc">Follow for updates</div>' +
+        '</a>' +
+        '<a href="https://t.me/asami_am0" target="_blank" rel="noopener noreferrer" class="store-card">' +
+          '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>' +
+          '<div class="store-card-title">Telegram</div>' +
+          '<div class="store-card-desc">Join our channel</div>' +
+        '</a>' +
+        '<a href="https://wa.me/6282191223912" target="_blank" rel="noopener noreferrer" class="store-card">' +
+          '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>' +
+          '<div class="store-card-title">WhatsApp</div>' +
+          '<div class="store-card-desc">Chat with us</div>' +
+        '</a>' +
+        '<a href="https://lynk.id/miistore99" target="_blank" rel="noopener noreferrer" class="store-card">' +
+          '<div class="store-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>' +
+          '<div class="store-card-title">Lynk.id Store</div>' +
+          '<div class="store-card-desc">Browse all products</div>' +
+        '</a>' +
+      '</div>' +
+      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
+    '</div>';
+  }
+
+  // Track control panel MutationObservers for cleanup
+  var controlObservers = [];
+
+  function disconnectControlObservers() {
+    controlObservers.forEach(function(obs) { obs.disconnect(); });
+    controlObservers = [];
+  }
+
+  function renderControl() {
+    var container = document.getElementById('viewControl');
+    if (!container) return;
+    container.innerHTML = '<div class="control-page">' +
+      '<div class="control-header">' +
+        '<h2 class="control-title">CONTROL PANEL</h2>' +
+        '<p class="control-subtitle">MII NETWORK SYSTEM</p>' +
+      '</div>' +
+      '<div class="control-grid">' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>Server Online</span></div>' +
+        '<div class="control-status-card"><span class="control-dot green"></span><span>Video Ready</span></div>' +
+        '<div class="control-status-card"><span class="control-dot yellow"></span><span>Photo Beta</span></div>' +
+        '<div class="control-status-card"><span class="control-dot gray"></span><span>MP3 Soon</span></div>' +
+      '</div>' +
+      '<div class="control-stats">' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlViews">0</div><div class="control-stat-label">VIEWS</div></div>' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlDownloads">0</div><div class="control-stat-label">DOWNLOADS</div></div>' +
+        '<div class="control-stat-box"><div class="control-stat-value" id="ctrlVisitors">0</div><div class="control-stat-label">VISITORS</div></div>' +
+      '</div>' +
+      '<button class="coming-soon-btn" onclick="showMainView()" style="margin-top:24px;">BACK TO DOWNLOADER</button>' +
+    '</div>';
+
+    // Copy stats from main page if available
+    var sv = document.getElementById('statViews');
+    var sd = document.getElementById('statDownloads');
+    var svi = document.getElementById('statVisitors');
+    var cv = document.getElementById('ctrlViews');
+    var cd = document.getElementById('ctrlDownloads');
+    var cvi = document.getElementById('ctrlVisitors');
+    if (sv && cv) cv.textContent = sv.textContent;
+    if (sd && cd) cd.textContent = sd.textContent;
+    if (svi && cvi) cvi.textContent = svi.textContent;
+
+    // Observe source stats for live updates while control view is open
+    disconnectControlObservers();
+    var observerOpts = { childList: true, characterData: true, subtree: true };
+
+    if (sv && cv) {
+      var obsViews = new MutationObserver(function() { cv.textContent = sv.textContent; });
+      obsViews.observe(sv, observerOpts);
+      controlObservers.push(obsViews);
+    }
+    if (sd && cd) {
+      var obsDownloads = new MutationObserver(function() { cd.textContent = sd.textContent; });
+      obsDownloads.observe(sd, observerOpts);
+      controlObservers.push(obsDownloads);
+    }
+    if (svi && cvi) {
+      var obsVisitors = new MutationObserver(function() { cvi.textContent = svi.textContent; });
+      obsVisitors.observe(svi, observerOpts);
+      controlObservers.push(obsVisitors);
+    }
+  }
+
+  function updateDrawerActive(view) {
+    var items = document.querySelectorAll('.side-drawer .drawer-item[data-view]');
+    items.forEach(function(item) {
+      if (item.getAttribute('data-view') === view) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
   }
 
   function showMainView() {
-    var section = document.getElementById('comingSoonSection');
-    var card = document.querySelector('.card');
-    var features = document.querySelector('.features-section');
-    var stats = document.querySelector('.stats-section');
-    var social = document.querySelector('.social-section');
-
-    if (section) section.style.display = 'none';
-    if (card) card.style.display = '';
-    if (features) features.style.display = '';
-    if (stats) stats.style.display = '';
-    if (social) social.style.display = '';
-
-    if (window.location.hash === '#coming-soon') {
-      history.replaceState(null, '', window.location.pathname);
-    }
+    navigateTo('downloader', true);
   }
 
   // Expose globally
-  window.showComingSoon = showComingSoon;
   window.showMainView = showMainView;
+  window.navigateTo = navigateTo;
 
   // Handle browser back button
-  window.addEventListener('hashchange', function() {
-    if (window.location.hash !== '#coming-soon') {
-      showMainView();
+  window.addEventListener('popstate', function(e) {
+    if (currentView !== 'downloader') {
+      navigateTo('downloader', true);
     }
   });
 
-  // Wire up drawer items
-  var drawerItems = document.querySelectorAll('.side-drawer .drawer-item');
-  drawerItems.forEach(function(item) {
-    var textEl = item.querySelector('.drawer-item-text');
-    if (!textEl) return;
-    var text = textEl.textContent.trim();
-
-    if (text === 'TikTok Downloader') {
+  // Wire up drawer items with data-view
+  document.addEventListener('DOMContentLoaded', function() {
+    var items = document.querySelectorAll('.side-drawer .drawer-item[data-view]');
+    items.forEach(function(item) {
       item.addEventListener('click', function(e) {
         e.preventDefault();
-        if (window._closeDrawer) window._closeDrawer();
-        showMainView();
+        var view = item.getAttribute('data-view');
+        navigateTo(view);
       });
-    } else if (comingSoonFeatures[text]) {
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (window._closeDrawer) window._closeDrawer();
-        showComingSoon(text);
-      });
-    }
+    });
   });
 })();
