@@ -79,6 +79,13 @@ async function downloadAudio() {
     }
   }, 300);
 
+  var stallTimeout = setTimeout(function() {
+    var text = document.getElementById('progressText');
+    if (text && document.getElementById('spinnerWrap').classList.contains('show')) {
+      text.textContent = '90% ...';
+    }
+  }, 20000);
+
   try {
     const response = await fetch('/download-audio', {
       method: 'POST',
@@ -107,16 +114,15 @@ async function downloadAudio() {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     }, 1000);
-    clearInterval(audioProgressInterval);
     showProgress(100);
     setStatus('Audio download berhasil!', 'ok');
   } catch(e) {
-    clearInterval(audioProgressInterval);
     setStatus('Audio belum bisa diproses. Coba video lain.', 'err');
   } finally {
     isDownloadingAudio = false;
     if (mp3Btn) mp3Btn.classList.remove('loading');
     clearInterval(audioProgressInterval);
+    clearTimeout(stallTimeout);
     setTimeout(function() { hideProgress(); }, 400);
   }
 }
@@ -203,6 +209,13 @@ async function confirmDownload() {
     }
   }, 300);
 
+  var stallTimeout = setTimeout(function() {
+    var text = document.getElementById('progressText');
+    if (text && document.getElementById('spinnerWrap').classList.contains('show')) {
+      text.textContent = '90% ...';
+    }
+  }, 20000);
+
   try {
     const formData = new FormData();
     formData.append('url', url);
@@ -239,18 +252,17 @@ async function confirmDownload() {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     }, 1000);
-    clearInterval(progressInterval);
     showProgress(100);
     setStatus('Download berhasil!', 'ok');
     trackEvent('download_success');
 
   } catch(e) {
-    clearInterval(progressInterval);
     setStatus('Terjadi kesalahan, coba lagi.', 'err');
   } finally {
     isDownloading = false;
     btn.disabled = false;
     clearInterval(progressInterval);
+    clearTimeout(stallTimeout);
     setTimeout(function() { hideProgress(); }, 400);
   }
 }

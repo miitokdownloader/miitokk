@@ -1081,11 +1081,6 @@ img.preview-thumb-fallback {
   text-shadow: 0 0 10px rgba(204,0,0,0.6), 0 0 20px rgba(204,0,0,0.3);
 }
 
-/* Control flicker animation class (used on stats title) */
-.control-flicker {
-  animation: none;
-}
-
 /* ── COMING SOON SECTION ──────────────────────── */
 .coming-soon-section {
   width: 92%;
