@@ -166,3 +166,66 @@ html, body {
   max-width: 100%;
   min-width: 0;
 }
+
+/* ── MOBILE LAYOUT FIX OVERRIDE (must stay at very bottom) ─── */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .container,
+  .hero,
+  .download-section,
+  .downloader-card,
+  .download-card {
+    width: 92% !important;
+    max-width: 560px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .quality-row,
+  .quality-tabs,
+  .tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .quality-row button,
+  .quality-tabs button,
+  .tabs button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .input-wrapper,
+  input,
+  .preview-card,
+  .download-btn,
+  .progress-bar,
+  .progress-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .features,
+  .feature-grid {
+    width: 92% !important;
+    max-width: 560px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    padding-bottom: 100px !important;
+  }
+}
