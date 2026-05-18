@@ -130,5 +130,39 @@
 }
 
 /* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */
-html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
-.page { overflow-x: hidden; max-width: 100%; }
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.page {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Ensure all elements use border-box and no element exceeds viewport */
+.card,
+.card *,
+.input-wrap,
+.input-wrap *,
+.preview-card,
+.preview-card *,
+.quality-row,
+.quality-row *,
+.progress-bar-wrap,
+.progress-bar-wrap *,
+.view-container,
+.view-container * {
+  box-sizing: border-box;
+}
+
+.input-wrap,
+.url-input,
+.preview-card,
+.progress-bar-wrap,
+.progress-bar-track,
+.quality-row {
+  max-width: 100%;
+  min-width: 0;
+}
