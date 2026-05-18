@@ -67,7 +67,33 @@ function clearUrl() {
   document.getElementById('urlInput').value = '';
   document.getElementById('clearBtn').classList.remove('visible');
   clearTimeout(previewTimer);
-  hidePreview();
+  // Full state reset
+  previewData = null;
   lastPreviewUrl = null;
+  isDownloading = false;
+  isDownloadingAudio = false;
+  selectedQuality = 'best';
+  // Reset quality buttons UI
+  document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.q-btn').classList.add('active');
+  // Reset quality badge
+  var qualityBadge = document.getElementById('qualityBadge');
+  if (qualityBadge) { qualityBadge.textContent = 'BEST'; qualityBadge.style.display = ''; }
+  // Restore download button (in case it was in photo mode)
+  isPhotoMode = false;
+  var dlBtn = document.getElementById('dlBtn');
+  dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="margin-right:8px; vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>DOWNLOAD';
+  dlBtn.onclick = function() { openModal(); };
+  dlBtn.disabled = false;
+  // Hide preview and progress
+  hidePreview();
+  hideProgress();
+  // Clear status
   setStatus('', '');
+  // Hide photo section
+  document.getElementById('photoSection').style.display = 'none';
+  document.getElementById('photoCarousel').innerHTML = '';
+  document.getElementById('photoCount').textContent = '';
+  document.getElementById('downloadAllBtn').style.display = 'none';
+  photoUrls = [];
 }
