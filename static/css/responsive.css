@@ -25,7 +25,7 @@
   .cyber-line-hero { width: 240px; }
   .card {
     padding: 36px 44px 44px;
-    max-width: 680px;
+    max-width: 560px;
   }
   .q-btn { padding: 10px 26px; font-size: 0.85rem; }
   .quality-row { gap: 12px; margin-bottom: 24px; }
@@ -60,7 +60,7 @@
   .hero-title { font-size: 5.5rem; letter-spacing: 0.15em; }
   .hero-sub { font-size: 0.95rem; }
   .sub-line { width: 80px; }
-  .card { max-width: 680px; padding: 40px 52px 48px; }
+  .card { max-width: 560px; padding: 40px 52px 48px; }
   .features-section { max-width: 800px; }
   .features-grid { gap: 14px; }
   .feature-card { padding: 16px 14px; }
@@ -81,7 +81,7 @@
   .hero-title { font-size: 6.5rem; }
   .hero-sub { font-size: 1rem; letter-spacing: 0.6em; }
   .sub-line { width: 100px; }
-  .card { max-width: 720px; padding: 44px 56px 52px; }
+  .card { max-width: 560px; padding: 44px 56px 52px; }
   .features-section { max-width: 1000px; }
   .stats-section { max-width: 1000px; }
   .social-section { max-width: 1000px; }

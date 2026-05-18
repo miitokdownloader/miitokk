@@ -5,10 +5,8 @@
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 28px 22px 32px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 0 24px rgba(204,0,0,0.08), 0 16px 40px rgba(0,0,0,0.6);
+  padding: 22px 18px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   position: relative;
 }
 
@@ -44,6 +42,7 @@
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
+  overflow-x: auto;
   margin-bottom: 20px;
 }
 
@@ -60,7 +59,7 @@
   cursor: pointer;
   transition: all var(--duration-fast);
   outline: none;
-  min-width: 70px;
+  min-width: unset;
   text-align: center;
 }
 
@@ -166,13 +165,13 @@
 }
 
 .preview-thumb {
-  width: 90px;
+  width: 72px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .preview-info {
-  padding: 10px 12px;
+  padding: 8px 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -214,14 +213,14 @@
 
 .quality-badge {
   font-family: var(--font-ui);
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--silver);
   background: rgba(20,0,0,0.5);
   border: 1px solid rgba(204,0,0,0.4);
   border-radius: 14px;
-  padding: 3px 10px;
+  padding: 2px 8px;
 }
 
 .mp3-btn {
@@ -229,14 +228,14 @@
   align-items: center;
   gap: 4px;
   font-family: var(--font-ui);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--silver);
   background: rgba(20,0,0,0.6);
   border: 1px solid rgba(204,0,0,0.5);
   border-radius: 14px;
-  padding: 4px 10px;
+  padding: 3px 8px;
   cursor: pointer;
   transition: all var(--duration-fast);
 }
@@ -710,7 +709,7 @@ img.preview-thumb-fallback {
   max-width: 520px;
   margin-top: 28px;
   text-align: center;
-  padding: 20px 16px;
+  padding: 14px 12px;
   position: relative;
   background: rgba(6,2,2,0.5);
   border: 1px solid var(--hud-border);
@@ -729,7 +728,7 @@ img.preview-thumb-fallback {
 
 .social-title {
   font-family: var(--font-logo);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   letter-spacing: 0.3em;
   color: var(--silver);
   text-shadow: 0 0 8px rgba(204,0,0,0.3);
@@ -758,7 +757,7 @@ img.preview-thumb-fallback {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   text-decoration: none;
   font-family: var(--font-body);
@@ -832,7 +831,7 @@ img.preview-thumb-fallback {
   background: rgba(0,0,0,0.45);
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
-  padding: 12px 10px;
+  padding: 10px 8px;
   text-align: center;
   transition: all var(--duration-normal);
 }
@@ -847,7 +846,7 @@ img.preview-thumb-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--red);
   filter: drop-shadow(0 0 4px rgba(204,0,0,0.4));
 }
@@ -866,12 +865,6 @@ img.preview-thumb-fallback {
   margin-bottom: 0;
 }
 
-.feature-desc {
-  font-size: 0.62rem;
-  color: var(--silver-dim);
-  line-height: 1.3;
-}
-
 /* -- STATS SECTION -- */
 .stats-section {
   width: 92%;
@@ -880,11 +873,10 @@ img.preview-thumb-fallback {
   text-align: center;
   position: relative;
   overflow: hidden;
-  padding: 24px 16px;
+  padding: 18px 14px;
   background: rgba(6,2,2,0.6);
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-md);
-  animation: hudFadeIn 0.6s ease-out;
 }
 
 .stats-section::before {
@@ -916,7 +908,6 @@ img.preview-thumb-fallback {
   width: 100%;
   height: 2px;
   background: rgba(204,0,0,0.15);
-  animation: scanline 4s linear infinite;
   pointer-events: none;
 }
 
@@ -926,7 +917,7 @@ img.preview-thumb-fallback {
 
 .stats-title-main {
   font-family: var(--font-logo);
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   letter-spacing: 0.2em;
   color: var(--red);
   text-shadow: 0 0 12px rgba(204,0,0,0.5);
@@ -1044,7 +1035,7 @@ img.preview-thumb-fallback {
   color: var(--silver);
   text-shadow: 0 0 6px rgba(204,0,0,0.4);
   line-height: 1.2;
-  animation: counterGlow 3s ease-in-out infinite;
+  animation: counterGlow 5s ease-in-out infinite;
 }
 
 .stat-label {
@@ -1088,11 +1079,6 @@ img.preview-thumb-fallback {
 /* Counter done glow state (added after counter animation completes) */
 .stat-value.counter-done {
   text-shadow: 0 0 10px rgba(204,0,0,0.6), 0 0 20px rgba(204,0,0,0.3);
-}
-
-/* Control flicker animation class (used on stats title) */
-.control-flicker {
-  animation: controlFlicker 4s infinite;
 }
 
 /* ── COMING SOON SECTION ──────────────────────── */
@@ -1147,7 +1133,6 @@ img.preview-thumb-fallback {
   width: 100%;
   height: 2px;
   background: rgba(204,0,0,0.15);
-  animation: scanline 4s linear infinite;
   pointer-events: none;
 }
 
@@ -1460,4 +1445,53 @@ img.preview-thumb-fallback {
   right: 0;
   border-right: 2px solid var(--red);
   border-bottom: 2px solid var(--red);
+}
+
+/* -- PROGRESS BAR -- */
+.progress-bar-wrap {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  padding: 4px 0;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(204,0,0,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(204,0,0,0.3);
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #cc0000, #ff3333);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(204,0,0,0.6);
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  animation: progressShimmer 1.5s ease-in-out infinite;
+}
+
+.progress-text {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: rgba(204,0,0,0.8);
+  margin-top: 6px;
+  text-align: center;
 }

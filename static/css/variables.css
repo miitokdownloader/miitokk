@@ -15,7 +15,7 @@
   --silver: #c0c0c0;
   --silver-dim: rgba(192,192,192,0.6);
   --hud-border: rgba(204,0,0,0.4);
-  --hud-glow: 0 0 8px rgba(204,0,0,0.3);
+  --hud-glow: 0 0 6px rgba(204,0,0,0.2);
 
   /* Fonts */
   --font-logo: 'Anton', 'Bebas Neue', sans-serif;
