@@ -89,8 +89,9 @@ function hidePreview() {
     'report': { type: 'coming-soon', title: 'REPORT BUG', badge: 'COMING SOON', description: 'Bug reporting system is under development.' }
   };
 
-  function navigateTo(view) {
+  function navigateTo(view, skipPush) {
     if (!viewConfig[view]) return;
+    var previousView = currentView;
     currentView = view;
 
     // Hide all views
@@ -103,6 +104,11 @@ function hidePreview() {
     if (viewComingSoon) viewComingSoon.style.display = 'none';
     if (viewStore) viewStore.style.display = 'none';
     if (viewControl) viewControl.style.display = 'none';
+
+    // Disconnect control panel observer when leaving control view
+    if (previousView === 'control' && view !== 'control') {
+      disconnectControlObservers();
+    }
 
     var config = viewConfig[view];
 
@@ -117,6 +123,11 @@ function hidePreview() {
     } else if (config.type === 'control') {
       renderControl();
       if (viewControl) viewControl.style.display = '';
+    }
+
+    // Push history state when navigating away from downloader
+    if (!skipPush && view !== 'downloader') {
+      history.pushState({ view: view }, '', '');
     }
 
     // Update active state in drawer
@@ -138,11 +149,15 @@ function hidePreview() {
       '<div class="coming-soon-corner tr"></div>' +
       '<div class="coming-soon-corner bl"></div>' +
       '<div class="coming-soon-corner br"></div>' +
-      '<h2 class="coming-soon-title">' + title + '</h2>' +
-      '<span class="coming-soon-badge">' + badge + '</span>' +
-      '<p class="coming-soon-subtitle">' + description + '</p>' +
+      '<h2 class="coming-soon-title"></h2>' +
+      '<span class="coming-soon-badge"></span>' +
+      '<p class="coming-soon-subtitle"></p>' +
       '<button class="coming-soon-btn" onclick="showMainView()">BACK TO DOWNLOADER</button>' +
       '</div>';
+    // Use textContent to avoid XSS from any future dynamic values
+    container.querySelector('.coming-soon-title').textContent = title;
+    container.querySelector('.coming-soon-badge').textContent = badge;
+    container.querySelector('.coming-soon-subtitle').textContent = description;
   }
 
   function renderStore() {
@@ -179,6 +194,14 @@ function hidePreview() {
     '</div>';
   }
 
+  // Track control panel MutationObservers for cleanup
+  var controlObservers = [];
+
+  function disconnectControlObservers() {
+    controlObservers.forEach(function(obs) { obs.disconnect(); });
+    controlObservers = [];
+  }
+
   function renderControl() {
     var container = document.getElementById('viewControl');
     if (!container) return;
@@ -211,6 +234,26 @@ function hidePreview() {
     if (sv && cv) cv.textContent = sv.textContent;
     if (sd && cd) cd.textContent = sd.textContent;
     if (svi && cvi) cvi.textContent = svi.textContent;
+
+    // Observe source stats for live updates while control view is open
+    disconnectControlObservers();
+    var observerOpts = { childList: true, characterData: true, subtree: true };
+
+    if (sv && cv) {
+      var obsViews = new MutationObserver(function() { cv.textContent = sv.textContent; });
+      obsViews.observe(sv, observerOpts);
+      controlObservers.push(obsViews);
+    }
+    if (sd && cd) {
+      var obsDownloads = new MutationObserver(function() { cd.textContent = sd.textContent; });
+      obsDownloads.observe(sd, observerOpts);
+      controlObservers.push(obsDownloads);
+    }
+    if (svi && cvi) {
+      var obsVisitors = new MutationObserver(function() { cvi.textContent = svi.textContent; });
+      obsVisitors.observe(svi, observerOpts);
+      controlObservers.push(obsVisitors);
+    }
   }
 
   function updateDrawerActive(view) {
@@ -225,12 +268,19 @@ function hidePreview() {
   }
 
   function showMainView() {
-    navigateTo('downloader');
+    navigateTo('downloader', true);
   }
 
   // Expose globally
   window.showMainView = showMainView;
   window.navigateTo = navigateTo;
+
+  // Handle browser back button
+  window.addEventListener('popstate', function(e) {
+    if (currentView !== 'downloader') {
+      navigateTo('downloader', true);
+    }
+  });
 
   // Wire up drawer items with data-view
   document.addEventListener('DOMContentLoaded', function() {
