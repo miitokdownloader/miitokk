@@ -73,7 +73,7 @@
   // Respect reduced-motion preference
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  var MAX_ORBS = 12;
+  var MAX_ORBS = 8;
   var orbContainer = document.getElementById('orbContainer');
   if (!orbContainer) return;
 
@@ -105,7 +105,7 @@
       if (idx > -1) {
         activeOrbs.splice(idx, 1);
       }
-    }, 800);
+    }, 750);
   }
 
   document.addEventListener('click', function(e) {
@@ -114,6 +114,7 @@
   });
 
   document.addEventListener('touchstart', function(e) {
+    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
     if (e.touches && e.touches.length > 0) {
       createOrb(e.touches[0].clientX, e.touches[0].clientY, false);
     }
@@ -121,10 +122,11 @@
 
   document.addEventListener('touchmove', function(e) {
     var now = Date.now();
-    if (now - lastTouchMove < 50) return;
+    if (now - lastTouchMove < 60) return;
     lastTouchMove = now;
+    if (e.target.closest('button, a, .modal, .side-drawer, .drawer-overlay, .dl-btn, .q-btn, .clear-btn, input')) return;
     if (e.touches && e.touches.length > 0) {
-      createOrb(e.touches[0].clientX, e.touches[0].clientY, false);
+      createOrb(e.touches[0].clientX, e.touches[0].clientY, true);
     }
   }, { passive: true });
 
