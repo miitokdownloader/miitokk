@@ -15,7 +15,7 @@ body {
 
 body {
   font-family: var(--font-body);
-  background: linear-gradient(160deg, #1a0000 0%, #0a0000 50%, #120000 100%);
+  background: linear-gradient(160deg, #0d0000 0%, #1a0000 25%, #0a0000 50%, #120000 75%, #080000 100%);
   background-color: var(--black);
   color: var(--white);
   -webkit-font-smoothing: antialiased;
@@ -24,35 +24,16 @@ body {
   user-select: none;
 }
 
-body.bg-fallback {
-  background-image: url('/static/img/background.webp');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 .url-input {
   -webkit-user-select: text;
   user-select: text;
-}
-
-/* ── Background Video ─────────────────────────── */
-.bg-video {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  z-index: 0;
-  pointer-events: none;
 }
 
 /* ── Background Overlay ───────────────────────── */
 .bg-overlay {
   position: fixed;
   inset: 0;
-  background: var(--overlay);
+  background: radial-gradient(ellipse at 50% 30%, rgba(139,0,0,0.12) 0%, transparent 60%), rgba(0,0,0,0.45);
   z-index: 1;
   pointer-events: none;
 }
@@ -64,4 +45,31 @@ body.bg-fallback {
   background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
   z-index: 1;
   pointer-events: none;
+}
+
+/* ── Orb Container ────────────────────────────── */
+.orb-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.touch-orb {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(204,0,0,0.6) 0%, rgba(139,0,0,0.3) 40%, transparent 70%);
+  pointer-events: none;
+  transform: scale(0);
+  opacity: 1;
+  will-change: transform, opacity;
+  animation: orbFadeOut 0.8s ease-out forwards;
+}
+
+.touch-orb.orb-small {
+  width: 40px;
+  height: 40px;
 }

@@ -1094,3 +1094,110 @@ img.preview-thumb-fallback {
 .control-flicker {
   animation: controlFlicker 4s infinite;
 }
+
+/* ── COMING SOON SECTION ──────────────────────── */
+.coming-soon-section {
+  width: 92%;
+  max-width: 520px;
+  display: none;
+  animation: fadeScale 0.3s ease-out;
+}
+
+.coming-soon-card {
+  background: rgba(6,2,2,0.85);
+  border: 1px solid rgba(204,0,0,0.5);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 24px rgba(204,0,0,0.1), 0 16px 40px rgba(0,0,0,0.6);
+}
+
+.coming-soon-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-left: 2px solid var(--red);
+  border-top: 2px solid var(--red);
+  opacity: 0.6;
+  border-radius: 2px 0 0 0;
+}
+
+.coming-soon-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-right: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
+  opacity: 0.6;
+  border-radius: 0 0 2px 0;
+}
+
+.coming-soon-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(204,0,0,0.15);
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+}
+
+.coming-soon-title {
+  font-family: var(--font-logo);
+  font-size: 1.8rem;
+  letter-spacing: 0.15em;
+  color: var(--white);
+  text-shadow: 0 0 8px rgba(204,0,0,0.5);
+  margin-bottom: 16px;
+}
+
+.coming-soon-badge {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--red);
+  background: rgba(204,0,0,0.1);
+  border: 1px solid rgba(204,0,0,0.5);
+  border-radius: 20px;
+  padding: 6px 18px;
+  margin-bottom: 16px;
+  text-shadow: 0 0 6px rgba(204,0,0,0.4);
+}
+
+.coming-soon-subtitle {
+  font-size: 0.85rem;
+  color: var(--silver-dim);
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
+}
+
+.coming-soon-btn {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: #f0f0f0;
+  background: linear-gradient(135deg, #d40000 0%, #8b0000 50%, #5c0000 100%);
+  border: 1px solid rgba(255,50,50,0.4);
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(204,0,0,0.3);
+}
+
+.coming-soon-btn:hover {
+  transform: scale(1.02) translateY(-2px);
+  box-shadow: 0 6px 28px rgba(204,0,0,0.5);
+}
