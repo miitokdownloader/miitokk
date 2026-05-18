@@ -3,12 +3,15 @@
 /* Small phones override */
 @media (max-width: 380px) {
   .hero-title { font-size: 2.2rem; }
-  .card { padding: 18px 14px 22px; }
-  .q-btn { padding: 7px 12px; font-size: 0.75rem; }
+  .card { padding: 18px 12px 22px; }
+  .q-btn { padding: 7px 0; font-size: 0.72rem; letter-spacing: 0.08em; }
+  .quality-row { gap: 4px; }
   .nav-brand { font-size: 1.2rem; }
   .mp3-btn { font-size: 0.55rem; padding: 2px 8px; }
   .quality-badge { font-size: 0.55rem; padding: 2px 6px; }
   .preview-actions { gap: 6px; }
+  .feature-title { font-size: 0.62rem; letter-spacing: 0.1em; }
+  .feature-icon svg { width: 18px; height: 18px; }
 }
 
 /* ── Tablet and up ─── */
@@ -93,6 +96,17 @@
 /* ── MOBILE RESPONSIVE ─── */
 @media (max-width: 640px) {
   .view-container {
+    width: 92%;
+    max-width: 100%;
+  }
+  .card {
+    width: 92%;
+    max-width: 560px;
+  }
+  .features-section,
+  .stats-section,
+  .social-section {
+    width: 92%;
     max-width: 100%;
   }
 }
@@ -100,17 +114,19 @@
 /* ── Mobile compact ─── */
 @media (max-width: 480px) {
   .hero-title { font-size: clamp(2.4rem, 10vw, 3.2rem); }
-  .card { padding: 20px 16px 24px; }
-  .q-btn { padding: 8px 16px; font-size: 0.78rem; }
+  .card { padding: 20px 14px 24px; }
+  .q-btn { padding: 8px 0; font-size: 0.78rem; }
+  .quality-row { gap: 5px; }
   .social-grid { grid-template-columns: 1fr; }
-  .features-grid { grid-template-columns: 1fr 1fr; }
-  .feature-card { padding: 10px 8px; }
+  .features-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .feature-card { padding: 8px 6px; }
   .social-btn { padding: 10px 14px; font-size: 0.82rem; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .stats-title-main { font-size: 1.3rem; }
   .mp3-btn { font-size: 0.58rem; }
   .quality-badge { font-size: 0.55rem; }
   .hero-title::after { display: none; }
+  .page { padding-bottom: 100px; }
 }
 
 /* ── No horizontal overflow safeguard (loaded last to guarantee no 100vw leaks) ─── */

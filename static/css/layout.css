@@ -3,11 +3,12 @@
   position: relative;
   z-index: 2;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 112px;
-  padding-bottom: 64px;
+  padding-bottom: 100px;
   padding-left: 16px;
   padding-right: 16px;
   overflow-x: hidden;

@@ -4,7 +4,7 @@
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 99990;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
@@ -23,7 +23,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 210;
+  z-index: 99995;
   width: 82vw;
   max-width: 380px;
   height: 100vh;
@@ -35,6 +35,7 @@
   transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
@@ -90,7 +91,7 @@
 
 /* ── DRAWER HEADER ────────────────────────────── */
 .drawer-header {
-  padding: 24px 20px 16px;
+  padding: 20px 16px 14px;
   border-bottom: 1px solid rgba(204,0,0,0.2);
   position: relative;
 }
@@ -113,8 +114,8 @@
 }
 
 .drawer-avatar {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 2px solid var(--red);
   object-fit: cover;
@@ -128,7 +129,7 @@
 
 .drawer-brand-title {
   font-family: var(--font-logo);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   letter-spacing: 0.15em;
   color: var(--white);
   text-shadow: 0 0 8px rgba(204,0,0,0.4);
@@ -202,7 +203,7 @@
 
 /* ── DRAWER SECTIONS ──────────────────────────── */
 .drawer-section {
-  padding: 14px 16px 8px;
+  padding: 12px 14px 6px;
 }
 
 .drawer-section-label {
@@ -220,13 +221,13 @@
 .drawer-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
+  gap: 10px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: var(--silver);
   font-family: var(--font-body);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.2s ease;
   border: 1px solid transparent;
@@ -261,8 +262,8 @@
 }
 
 .drawer-item-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -278,8 +279,8 @@
 }
 
 .drawer-item-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .drawer-item-text {
@@ -497,20 +498,31 @@
 
 @media (max-width: 380px) {
   .drawer-header {
-    padding: 20px 16px 14px;
+    padding: 18px 14px 12px;
   }
 
   .drawer-avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 
   .drawer-brand-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .drawer-item {
-    padding: 10px 12px;
-    font-size: 0.8rem;
+    padding: 8px 10px;
+    font-size: 0.76rem;
+    gap: 8px;
+  }
+
+  .drawer-item-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .drawer-item-icon svg {
+    width: 14px;
+    height: 14px;
   }
 }
