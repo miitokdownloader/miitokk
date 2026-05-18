@@ -1,0 +1,516 @@
+/* ── SIDE DRAWER ───────────────────────────────── */
+
+/* Overlay */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Drawer Panel */
+.side-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 210;
+  width: 82vw;
+  max-width: 380px;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(8,2,2,0.96);
+  border-right: 1px solid rgba(204,0,0,0.5);
+  box-shadow: 2px 0 24px rgba(204,0,0,0.15), 4px 0 60px rgba(0,0,0,0.7);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(204,0,0,0.3) transparent;
+}
+
+.side-drawer::-webkit-scrollbar {
+  width: 4px;
+}
+
+.side-drawer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-drawer::-webkit-scrollbar-thumb {
+  background: rgba(204,0,0,0.3);
+  border-radius: 2px;
+}
+
+.side-drawer.active {
+  transform: translateX(0);
+}
+
+/* Close Button */
+.drawer-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(204,0,0,0.4);
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: var(--silver);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.drawer-close:hover {
+  border-color: var(--red);
+  color: var(--white);
+  box-shadow: 0 0 10px rgba(204,0,0,0.4);
+}
+
+.drawer-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── DRAWER HEADER ────────────────────────────── */
+.drawer-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(204,0,0,0.2);
+  position: relative;
+}
+
+.drawer-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(204,0,0,0.5), transparent);
+}
+
+.drawer-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.drawer-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--red);
+  object-fit: cover;
+  box-shadow: 0 0 12px rgba(204,0,0,0.3);
+}
+
+.drawer-brand-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-brand-title {
+  font-family: var(--font-logo);
+  font-size: 1.3rem;
+  letter-spacing: 0.15em;
+  color: var(--white);
+  text-shadow: 0 0 8px rgba(204,0,0,0.4);
+  line-height: 1.2;
+}
+
+.drawer-brand-sub {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--silver-dim);
+  margin-top: 2px;
+}
+
+.drawer-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drawer-badge-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid rgba(204,0,0,0.5);
+  border-radius: 12px;
+  background: rgba(204,0,0,0.08);
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--red);
+}
+
+.drawer-badge-control::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 4px var(--red);
+}
+
+.drawer-badge-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid rgba(68,255,136,0.4);
+  border-radius: 12px;
+  background: rgba(68,255,136,0.05);
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #44ff88;
+}
+
+.drawer-badge-online::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #44ff88;
+  box-shadow: 0 0 4px rgba(68,255,136,0.6);
+  animation: drawerPulse 2s ease-in-out infinite;
+}
+
+/* ── DRAWER SECTIONS ──────────────────────────── */
+.drawer-section {
+  padding: 14px 16px 8px;
+}
+
+.drawer-section-label {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: rgba(204,0,0,0.6);
+  margin-bottom: 8px;
+  padding-left: 4px;
+  text-transform: uppercase;
+}
+
+/* ── DRAWER MENU ITEMS ────────────────────────── */
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--silver);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.drawer-item:hover {
+  color: var(--white);
+  background: rgba(204,0,0,0.06);
+  border-color: rgba(204,0,0,0.2);
+}
+
+.drawer-item.active {
+  background: rgba(204,0,0,0.12);
+  border-color: rgba(204,0,0,0.5);
+  color: var(--white);
+  box-shadow: 0 0 12px rgba(204,0,0,0.15);
+}
+
+.drawer-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--red);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 6px var(--red);
+}
+
+.drawer-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.drawer-item.active .drawer-item-icon {
+  color: var(--red);
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(204,0,0,0.5));
+}
+
+.drawer-item-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.drawer-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-item-badge {
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.drawer-item-badge.active-badge {
+  background: rgba(204,0,0,0.2);
+  border: 1px solid rgba(204,0,0,0.5);
+  color: var(--red);
+}
+
+.drawer-item-badge.soon-badge {
+  background: rgba(100,100,100,0.15);
+  border: 1px solid rgba(100,100,100,0.4);
+  color: rgba(192,192,192,0.6);
+}
+
+.drawer-item-badge.beta-badge {
+  background: rgba(255,170,0,0.1);
+  border: 1px solid rgba(255,170,0,0.4);
+  color: #ffaa00;
+}
+
+/* ── DRAWER SEPARATOR ─────────────────────────── */
+.drawer-separator {
+  height: 1px;
+  margin: 4px 16px;
+  background: linear-gradient(90deg, transparent, rgba(204,0,0,0.2), transparent);
+}
+
+/* ── PROMO CARD ───────────────────────────────── */
+.drawer-promo-card {
+  margin: 8px 16px;
+  padding: 14px 16px;
+  background: rgba(204,0,0,0.06);
+  border: 1px solid rgba(204,0,0,0.3);
+  border-radius: var(--radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.drawer-promo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(204,0,0,0.5), transparent);
+}
+
+.drawer-promo-title {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.drawer-promo-text {
+  font-size: 0.68rem;
+  color: var(--silver-dim);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.drawer-promo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #d40000 0%, #8b0000 100%);
+  border: 1px solid rgba(255,50,50,0.3);
+  border-radius: var(--radius-sm);
+  color: #f0f0f0;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-promo-btn:hover {
+  box-shadow: 0 0 14px rgba(204,0,0,0.4);
+  transform: translateY(-1px);
+}
+
+/* ── CONTROL MINI CARD (HUD) ──────────────────── */
+.drawer-hud-card {
+  margin: 8px 16px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(204,0,0,0.3);
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+
+.drawer-hud-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid var(--red);
+  border-top: 2px solid var(--red);
+  opacity: 0.6;
+}
+
+.drawer-hud-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--red);
+  border-bottom: 2px solid var(--red);
+  opacity: 0.6;
+}
+
+.drawer-hud-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.drawer-hud-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.drawer-hud-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.drawer-hud-dot.green {
+  background: #44ff88;
+  box-shadow: 0 0 4px rgba(68,255,136,0.5);
+}
+
+.drawer-hud-dot.yellow {
+  background: #ffaa00;
+  box-shadow: 0 0 4px rgba(255,170,0,0.5);
+}
+
+.drawer-hud-dot.gray {
+  background: #666;
+}
+
+.drawer-hud-label {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--silver-dim);
+}
+
+/* ── DRAWER FOOTER ────────────────────────────── */
+.drawer-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(204,0,0,0.15);
+  text-align: center;
+}
+
+.drawer-footer-brand {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: rgba(204,0,0,0.5);
+  margin-bottom: 3px;
+}
+
+.drawer-footer-sub {
+  font-size: 0.58rem;
+  color: var(--silver-dim);
+  letter-spacing: 0.1em;
+}
+
+/* ── ANIMATIONS ───────────────────────────────── */
+@keyframes drawerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (min-width: 768px) {
+  .side-drawer {
+    width: 380px;
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 380px) {
+  .drawer-header {
+    padding: 20px 16px 14px;
+  }
+
+  .drawer-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .drawer-brand-title {
+    font-size: 1.1rem;
+  }
+
+  .drawer-item {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}
